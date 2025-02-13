@@ -3,14 +3,14 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: .  
     container_name: backend
     volumes:
-      - ./backend:/app
+      - .:/app  
     ports:
       - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
-      - DEBUG=True
+      - DEBUG=${DEBUG}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}

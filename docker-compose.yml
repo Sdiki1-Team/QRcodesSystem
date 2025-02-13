@@ -3,10 +3,10 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: .  
     container_name: backend
     volumes:
-      - ./backend:/app
+      - .:/app  
     ports:
       - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
@@ -19,6 +19,7 @@ services:
     command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
     depends_on:
       - db
+
 
   frontend:
     image: node:20 

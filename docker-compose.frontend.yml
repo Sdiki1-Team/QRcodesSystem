@@ -3,10 +3,10 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: .  
     container_name: backend
     volumes:
-      - ./backend:/app
+      - .:/app  
     ports:
       - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
@@ -20,16 +20,6 @@ services:
     depends_on:
       - db
 
-  frontend:
-    build:
-      context: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - frontend:/app
-    depends_on:
-      - backend
 
   nginx:
     image: nginx:latest
@@ -41,6 +31,19 @@ services:
     depends_on:
       - backend
       - frontend
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
 
   db:
     image: postgres:13
@@ -54,6 +57,7 @@ services:
     ports:
       - "${DB_PORT}:${DB_PORT}"
 
+
+
 volumes:
   postgres_data:
-  frontend:

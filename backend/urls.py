@@ -15,7 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -27,9 +26,8 @@ schema_view = get_schema_view(
         title="Your API",
         default_version='v1',
         description="Detailed description of your API",
-        terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="your-email@example.com"),
-        license=openapi.License(name="MIT License"),
+        contact=openapi.Contact(email="volodymyrbuharin@yandex.ru"),
+        license=openapi.License(name="GNU License"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
@@ -38,6 +36,5 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('auth_app.urls')),
-    path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/v1/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

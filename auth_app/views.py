@@ -12,6 +12,7 @@ from .serializers import RegisterSerializer, LoginSerializer, PingSerializer, Re
 
 class RegisterView(APIView):
     @swagger_auto_schema(
+        tags=['auth'], 
         operation_description="Регистрация новогопользователя",
         request_body=RegisterSerializer,
         responses={
@@ -30,6 +31,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     @swagger_auto_schema(
+        tags=['auth'],
         operation_description="Аворизация пользователя",
         request_body=LoginSerializer,
         responses={
@@ -54,6 +56,7 @@ class LoginView(APIView):
 
 class RefreshTokenView(APIView):
     @swagger_auto_schema(
+        tags=['auth'],
         operation_description="Обновление access token с использоаанием refresh token",
         request_body=RefreshTokenSerializer,
         responses={
@@ -77,6 +80,7 @@ class RefreshTokenView(APIView):
 
 class PingView(APIView):
     @swagger_auto_schema(
+        tags=['auth'],
         operation_description="Проверка состояния сервера",
         responses={
             200: "Сервер работает",
