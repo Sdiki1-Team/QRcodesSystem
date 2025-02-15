@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,3 +30,15 @@ class PingSerializer(serializers.Serializer):
 
 class RefreshTokenSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=True, help_text="Refresh token, который нужно преобразовать в access token.")
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(required=True)
+
+    def validate_refresh_token(self, value):
+        try:
+            RefreshToken(value)
+            return value
+        except Exception:
+            raise serializers.ValidationError("Invalid refresh token")
+        
