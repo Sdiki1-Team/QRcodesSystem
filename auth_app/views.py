@@ -126,3 +126,15 @@ class LogoutView(APIView):
             except TokenError:
                 return Response({"error": "Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class StatusUser(APIView):
+    @swagger_auto_schema(
+        tags=['user'],
+        operation_description="Статус пользователя",
+        responses={200: 'Статус пользователя\n\nМожет быть "staff", "user"\nstaff = прораб\nuser = работник', 400: "Ошибка получения статуса пользователя"}
+    )
+    def get(self, request):
+        user = request.user
+        if user.is_superuser or user.is_staff:
+            return Response({"status": "staff"}, status=status.HTTP_200_OK)
+        return Response({"status": "user"}, status=status.HTTP_200_OK)

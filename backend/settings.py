@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'drf_yasg',
 
     'auth_app',
+    'main_app',
 ]
 
 REST_FRAMEWORK = {
