@@ -1,5 +1,7 @@
+from ast import mod
 from django.db import models
 from auth_app.models import CustomUser
+from datetime import timezone
 
 # Create your models here.
 class Object(models.Model):
@@ -25,6 +27,7 @@ class Object(models.Model):
 
 
 class Work(models.Model):
+    id = models.BigAutoField(primary_key=True)
     object = models.ForeignKey(Object, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True, blank=True)
@@ -50,3 +53,9 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review for {self.work.object.name} by {self.supervisor.username}"
+
+class WorkImage(models.Model):
+    work = models.ForeignKey(Work, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
