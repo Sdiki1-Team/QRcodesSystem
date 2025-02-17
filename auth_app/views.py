@@ -100,8 +100,6 @@ class PingView(APIView):
         return Response({"status": "auth"}, status=status.HTTP_200_OK)
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
     @swagger_auto_schema(
         tags=['auth'],
         operation_description="Выход пользователя (удаление всех токенов). Что делается - Удаляется refresh_token. После на frontend надо удалить access токен, таким образом профиль разлогинится)",
@@ -131,10 +129,14 @@ class StatusUser(APIView):
     @swagger_auto_schema(
         tags=['user'],
         operation_description="Статус пользователя",
-        responses={200: 'Статус пользователя\n\nМожет быть "staff", "user"\nstaff = прораб\nuser = работник', 400: "Ошибка получения статуса пользователя"}
+        responses={200: 'Статус пользователя\n\nМожет быть "staff", "user"\nstaff = прораб\nuser = работник\n', 400: "Ошибка получения статуса пользователя"}
     )
     def get(self, request):
         user = request.user
-        if user.is_superuser or user.is_staff:
-            return Response({"status": "staff"}, status=status.HTTP_200_OK)
-        return Response({"status": "user"}, status=status.HTTP_200_OK)
+        if user.is_authenticated:
+            if user.is_superuser or user.is_staff:
+                return Response({"status": "staff"}, status=status.HTTP_200_OK)
+            return Response({"status": "user"}, status=status.HTTP_200_OK)
+        return Response({"status": "unauthentificated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+    
