@@ -28,8 +28,8 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            return Response({"message": "User registred successfully"}, status=status.HTTP_201_CREATED)
+            serializer.save()
+            return Response({"message": "User registred successfully"}, status=status.HTTP_201_CREATED) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -120,7 +120,6 @@ class LogoutView(APIView):
             try:
                 refresh = RefreshToken(refresh_token)
                 refresh.blacklist()
-
 
                 return Response({"message": "User logged out successfully, all tokens invalidated"}, status=status.HTTP_200_OK)
             except TokenError:
