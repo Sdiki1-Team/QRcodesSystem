@@ -88,6 +88,7 @@ class PingView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        security=[{'Bearer': []}],
         tags=['auth'],
         operation_description="Проверка состояния сервера",
         responses={
@@ -101,6 +102,7 @@ class PingView(APIView):
 
 class LogoutView(APIView):
     @swagger_auto_schema(
+        security=[{'Bearer': []}],
         tags=['auth'],
         operation_description="Выход пользователя (удаление всех токенов). Что делается - Удаляется refresh_token. После на frontend надо удалить access токен, таким образом профиль разлогинится)",
         request_body=LogoutSerializer,
@@ -126,6 +128,7 @@ class LogoutView(APIView):
     
 class StatusUser(APIView):
     @swagger_auto_schema(
+        security=[{'Bearer': []}],
         tags=['user'],
         operation_description="Статус пользователя",
         responses={200: 'Статус пользователя\n\nМожет быть "staff", "user"\nstaff = прораб\nuser = работник\n', 400: "Ошибка получения статуса пользователя"}

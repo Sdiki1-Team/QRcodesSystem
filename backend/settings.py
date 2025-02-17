@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -50,9 +50,12 @@ INSTALLED_APPS = [
     'main_app',
 ]
 
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://backend:8000", "http://127.0.0.1:3000", "http://127.0.0.1:8080"]
+
 CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://127.0.0.1:3000', 
+  'http://127.0.0.1:8080',
 ]
 
 REST_FRAMEWORK = {
@@ -62,7 +65,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -109,6 +112,18 @@ TEMPLATES = [
     },
 ]
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Введите токен в формате: Bearer &lt;token>'
+        }
+    },
+    'USE_SESSION_AUTH': False
+}
+
 WSGI_APPLICATION = "backend.wsgi.application"
 
 
@@ -121,6 +136,8 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+AUTH_USER_MODEL = 'auth_app.CustomUser' 
+
 
 
 # Password validation
@@ -158,6 +175,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+
+# settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
