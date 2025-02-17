@@ -20,6 +20,10 @@ class WorkSerializer(serializers.ModelSerializer):
         model = Work
         fields = ['id', 'start_time', 'end_time']
 
+class ObjectStatsSerializer(serializers.Serializer):
+    total_completed_works = serializers.IntegerField()
+    user_completed_works = serializers.IntegerField()
+
 class StatusResponseSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=['busy', 'start', 'work', 'review', 'not_found', 'forbidden'])
     object = ObjectSerializer(required=False)
@@ -28,6 +32,8 @@ class StatusResponseSerializer(serializers.Serializer):
         child=serializers.ChoiceField(choices=['start', 'end', 'review']), 
         required=False
     )
+    stats = ObjectStatsSerializer()
+    
 class StartWorkSerializer(serializers.Serializer):
     object = serializers.IntegerField(
         required=True,

@@ -2,189 +2,218 @@ from rest_framework import status, generics, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.exceptions import PermissionDenied 
+from rest_framework.exceptions import PermissionDenied
 
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
-from .serializers import WorkSerializer, ReviewSerializer, WorkImageSerializer, StartWorkSerializer, EndWorkSerializer, ObjectSerializer, StatusResponseSerializer
+from .serializers import (
+    WorkSerializer,
+    ReviewSerializer,
+    WorkImageSerializer,
+    StartWorkSerializer,
+    EndWorkSerializer,
+    ObjectSerializer,
+    StatusResponseSerializer,
+)
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 
-
-
 class StartWorkView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['work'],
+        security=[{"Bearer": []}],
+        tags=["work"],
         operation_description="Начало работы на объекте",
         request_body=StartWorkSerializer,
         responses={
             200: "Работа началась",
             400: "Ошибка валидации",
-            403: "Доступ запрещен"
-        }
+            403: "Доступ запрещен",
+        },
     )
     def post(self, request):
         serializer = StartWorkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        object_id = serializer.validated_data['object']
+
+        object_id = serializer.validated_data["object"]
         user = request.user
 
         if Work.objects.filter(user=user, end_time__isnull=True).exists():
-            if Work.objects.filter(user=user, end_time__isnull=True, object=object_id).exists():
+            if Work.objects.filter(
+                user=user, end_time__isnull=True, object=object_id
+            ).exists():
                 return Response(
-                {'error': 'Пользователь уже работает на этом объекте.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                    {"error": "Пользователь уже работает на этом объекте."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(
-                {'error': 'Пользователь уже работает на другом объекте.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Пользователь уже работает на другом объекте."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
             obj = Object.objects.get(id=object_id)
             if user not in obj.worker.all() and user != obj.supervisor:
                 return Response(
-                    {'error': 'Нет прав для работы с этим объектом'},
-                    status=status.HTTP_403_FORBIDDEN
+                    {"error": "Нет прав для работы с этим объектом"},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
         except Object.DoesNotExist:
             return Response(
-                {'error': 'Объект не найден'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Объект не найден"}, status=status.HTTP_404_NOT_FOUND
             )
 
         work = Work.objects.create(object=obj, user=user)
         work.start_work()
-        
+
         return Response(
             {"detail": "Работа успешно начата", "work_id": work.id},
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
-    
+
 
 class EndWorkView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['work'],
+        security=[{"Bearer": []}],
+        tags=["work"],
         operation_description="Завершение работы на объекте",
         request_body=EndWorkSerializer,
         responses={
             200: "Работа успешно завершена",
             400: "Неверный запрос",
             403: "Доступ запрещен",
-            404: "Работа не найдена"
-        }
+            404: "Работа не найдена",
+        },
     )
     def post(self, request):
-        serializer = EndWorkSerializer(data=request.data, context={'request': request})
+        serializer = EndWorkSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        
-        work_id = serializer.validated_data['work_id']
-        work = Work.objects.get(id=work_id) 
-        
+
+        work_id = serializer.validated_data["work_id"]
+        work = Work.objects.get(id=work_id)
+
         work.end_work()
         return Response(
             {
                 "detail": "Работа успешно завершена",
                 "work_id": work.id,
-                "end_time": work.end_time
+                "end_time": work.end_time,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
 
 class ReviewView(APIView):
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['review'],
+        security=[{"Bearer": []}],
+        tags=["review"],
         operation_description="Оценка работы",
         request_body=ReviewSerializer,
-        responses={200: "Оценка успешно оставлена", 400: "Ошибка оценки"}
+        responses={200: "Оценка успешно оставлена", 400: "Ошибка оценки"},
     )
     def post(self, request, work_id):
         review_data = request.data
-        review_data['work'] = work_id
+        review_data["work"] = work_id
         serializer = ReviewSerializer(data=review_data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"detail": "Оценка успешно оставлена"}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Оценка успешно оставлена"}, status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ObjectStatusView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['object'],
-        operation_description='Получение статуса работы пользователя с объектом',
+        security=[{"Bearer": []}],
+        tags=["object"],
+        operation_description="Получение статуса работы пользователя с объектом",
         manual_parameters=[
             openapi.Parameter(
-                'object_id', openapi.IN_PATH, 
-                description='ID объекта', 
-                type=openapi.TYPE_INTEGER
+                "object_id",
+                openapi.IN_PATH,
+                description="ID объекта",
+                type=openapi.TYPE_INTEGER,
             )
         ],
         responses={
             200: openapi.Response(
-                description='Успешный ответ',
-                schema=StatusResponseSerializer
+                description="Успешный ответ", schema=StatusResponseSerializer
             ),
-            404: openapi.Response(description='Объект не найден'),
-            403: openapi.Response(description='Доступ запрещен')
-        }
+            404: openapi.Response(description="Объект не найден"),
+            403: openapi.Response(description="Доступ запрещен"),
+        },
     )
     def get(self, request, object_id):
         user = request.user
-        response_data = {'status': None}
-        
+        response_data = {"status": None, "stats": {}}
+
         try:
             obj = Object.objects.get(id=object_id)
         except Object.DoesNotExist:
-            return Response({'status': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"status": "not_found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Проверка прав доступа к объекту
         if user not in obj.worker.all() and user != obj.supervisor:
-            return Response({'status': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"status": "forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Проверка активных работ пользователя
         active_work = Work.objects.filter(user=user, end_time__isnull=True).first()
-        
+
+        total_completed = Work.objects.filter(
+            object=obj, start_time__isnull=False, end_time__isnull=False
+        ).count()
+
+        user_completed = Work.objects.filter(
+            object=obj, user=user, start_time__isnull=False, end_time__isnull=False
+        ).count()
+
+        response_data["stats"] = {
+            "total_completed_works": total_completed,
+            "user_completed_works": user_completed,
+        }
         if active_work:
             if active_work.object_id != object_id:
-                response_data.update({
-                    'status': 'busy',
-                    'active_work': WorkSerializer(active_work).data,
-                    'current_object': ObjectSerializer(active_work.object).data
-                })
+                response_data.update(
+                    {
+                        "status": "busy",
+                        "active_work": WorkSerializer(active_work).data,
+                        "current_object": ObjectSerializer(active_work.object).data,
+                    }
+                )
             else:
-                response_data.update({
-                    'status': 'work',
-                    'object': ObjectSerializer(obj).data,
-                    'work': WorkSerializer(active_work).data,
-                    'available_actions': ['end']
-                })
+                response_data.update(
+                    {
+                        "status": "work",
+                        "object": ObjectSerializer(obj).data,
+                        "work": WorkSerializer(active_work).data,
+                        "available_actions": ["end"],
+                    }
+                )
         elif user.is_staff or user.is_superuser:
-            response_data.update({
-                'status': 'review',
-                'object': ObjectSerializer(obj).data,
-                'available_actions': ['review']
-            })
+            response_data.update(
+                {
+                    "status": "review",
+                    "object": ObjectSerializer(obj).data,
+                    "available_actions": ["review"],
+                }
+            )
         else:
-            response_data.update({
-                'status': 'start',
-                'object': ObjectSerializer(obj).data,
-                'available_actions': ['start']
-            })
+            response_data.update(
+                {
+                    "status": "start",
+                    "object": ObjectSerializer(obj).data,
+                    "available_actions": ["start"],
+                }
+            )
 
         return Response(response_data, status=status.HTTP_200_OK)
+
 
 class WorkImageUploadView(generics.CreateAPIView):
     serializer_class = WorkImageSerializer
@@ -192,33 +221,32 @@ class WorkImageUploadView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['Work Images'],
-        operation_description='Добавление изображения к работе',
+        security=[{"Bearer": []}],
+        tags=["Work Images"],
+        operation_description="Добавление изображения к работе",
         manual_parameters=[
             openapi.Parameter(
-                'work_id', openapi.IN_PATH, 
-                description='ID работы', 
-                type=openapi.TYPE_INTEGER
+                "work_id",
+                openapi.IN_PATH,
+                description="ID работы",
+                type=openapi.TYPE_INTEGER,
             )
         ],
         responses={
             201: WorkImageSerializer,
-            400: 'Ошибка валидации',
-            403: 'Доступ запрещен',
-            404: 'Работа не найдена'
-        }
+            400: "Ошибка валидации",
+            403: "Доступ запрещен",
+            404: "Работа не найдена",
+        },
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        work_id = self.kwargs['work_id']
+        work_id = self.kwargs["work_id"]
         try:
             work = Work.objects.get(
-                id=work_id,
-                user=self.request.user,
-                end_time__isnull=True
+                id=work_id, user=self.request.user, end_time__isnull=True
             )
             serializer.save(work=work)
         except Work.DoesNotExist:
@@ -226,110 +254,114 @@ class WorkImageUploadView(generics.CreateAPIView):
                 "Работа не найдена или недоступна для добавления изображений"
             )
 
+
 class WorkImageListView(generics.ListAPIView):
     serializer_class = WorkImageSerializer
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['Work Images'],
-        operation_description='Получение списка изображений работы',
+        security=[{"Bearer": []}],
+        tags=["Work Images"],
+        operation_description="Получение списка изображений работы",
         manual_parameters=[
             openapi.Parameter(
-                'work_id', openapi.IN_PATH, 
-                description='ID работы', 
-                type=openapi.TYPE_INTEGER
+                "work_id",
+                openapi.IN_PATH,
+                description="ID работы",
+                type=openapi.TYPE_INTEGER,
             )
         ],
         responses={
             200: WorkImageSerializer(many=True),
-            403: 'Доступ запрещен',
-            404: 'Работа не найдена'
-        }
+            403: "Доступ запрещен",
+            404: "Работа не найдена",
+        },
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        work_id = self.kwargs['work_id']
+        work_id = self.kwargs["work_id"]
         work = Work.objects.get(id=work_id)
-        
-        if not (self.request.user.is_staff 
-               or self.request.user.is_superuser 
-               or work.user == self.request.user):
+
+        if not (
+            self.request.user.is_staff
+            or self.request.user.is_superuser
+            or work.user == self.request.user
+        ):
             raise PermissionDenied()
-            
+
         return WorkImage.objects.filter(work_id=work_id)
+
 
 class WorkImageDetailView(generics.RetrieveAPIView):
     serializer_class = WorkImageSerializer
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['Work Images'],
-        operation_description='Получение информации об изображении',
+        security=[{"Bearer": []}],
+        tags=["Work Images"],
+        operation_description="Получение информации об изображении",
         manual_parameters=[
             openapi.Parameter(
-                'work_id', openapi.IN_PATH, 
-                description='ID работы', 
-                type=openapi.TYPE_INTEGER
+                "work_id",
+                openapi.IN_PATH,
+                description="ID работы",
+                type=openapi.TYPE_INTEGER,
             ),
             openapi.Parameter(
-                'image_id', openapi.IN_PATH, 
-                description='ID изображения', 
-                type=openapi.TYPE_INTEGER
-            )
+                "image_id",
+                openapi.IN_PATH,
+                description="ID изображения",
+                type=openapi.TYPE_INTEGER,
+            ),
         ],
-        responses={
-            200: WorkImageSerializer,
-            403: 'Доступ запрещен',
-            404: 'Не найдено'
-        }
+        responses={200: WorkImageSerializer, 403: "Доступ запрещен", 404: "Не найдено"},
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     def get_object(self):
-        work_id = self.kwargs['work_id']
-        image_id = self.kwargs['image_id']
-        
+        work_id = self.kwargs["work_id"]
+        image_id = self.kwargs["image_id"]
+
         work = Work.objects.get(id=work_id)
         image = WorkImage.objects.get(id=image_id, work_id=work_id)
-        
-        if not (self.request.user.is_staff 
-               or self.request.user.is_superuser 
-               or work.user == self.request.user):
+
+        if not (
+            self.request.user.is_staff
+            or self.request.user.is_superuser
+            or work.user == self.request.user
+        ):
             raise PermissionDenied()
-            
+
         return image
+
 
 class WorkImageDeleteView(generics.DestroyAPIView):
     queryset = WorkImage.objects.all()
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        security=[{'Bearer': []}],
-        tags=['Work Images'],
-        operation_description='Удаление изображения по его айди',
+        security=[{"Bearer": []}],
+        tags=["Work Images"],
+        operation_description="Удаление изображения по его айди",
         operation_summary="Удаление изображения",
         manual_parameters=[
             openapi.Parameter(
-                'work_id', openapi.IN_PATH, 
-                description='ID работы', 
-                type=openapi.TYPE_INTEGER
+                "work_id",
+                openapi.IN_PATH,
+                description="ID работы",
+                type=openapi.TYPE_INTEGER,
             ),
             openapi.Parameter(
-                'image_id', openapi.IN_PATH, 
-                description='ID изображения', 
-                type=openapi.TYPE_INTEGER
-            )
+                "image_id",
+                openapi.IN_PATH,
+                description="ID изображения",
+                type=openapi.TYPE_INTEGER,
+            ),
         ],
-        responses={
-            204: 'Удалено',
-            403: 'Доступ запрещен',
-            404: 'Не найдено'
-        }
+        responses={204: "Удалено", 403: "Доступ запрещен", 404: "Не найдено"},
     )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
@@ -337,8 +369,5 @@ class WorkImageDeleteView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         work = instance.work
         if work.end_time is not None or work.user != self.request.user:
-            raise PermissionDenied(
-                "Нельзя удалять изображения завершенной работы"
-            )
+            raise PermissionDenied("Нельзя удалять изображения завершенной работы")
         instance.delete()
-
