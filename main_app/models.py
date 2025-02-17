@@ -1,7 +1,7 @@
 from ast import mod
+import datetime
 from django.db import models
 from auth_app.models import CustomUser
-from datetime import timezone
 
 # Create your models here.
 class Object(models.Model):
@@ -34,13 +34,11 @@ class Work(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
 
     def start_work(self):
-        if Work.objects.filter(user=self.user, end_time__isnull=True).exists():
-            raise ValueError("Пользователь уже работает над другим объектом.")
-        self.start_time = timezone.now()
+        self.start_time = datetime.datetime.now()
         self.save()
 
     def end_work(self):
-        self.end_time = timezone.now()
+        self.end_time = datetime.datetime.now()
         self.save()
 
 
