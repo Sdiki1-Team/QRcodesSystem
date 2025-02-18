@@ -25,7 +25,7 @@
 
 ### Auth (`/api/v1/auth`)
 - **POST /api/v1/auth/login/**  
-  Логирует пользователя. Возвращает `access_token` и `refresh_token`.
+  Авторизация пользователя. Возвращает `access_token` и `refresh_token`.
   
 - **POST /api/v1/auth/register/**  
   Регистрирует нового пользователя. Возвращает сообщение с статусом.
@@ -38,6 +38,17 @@
 
 - **POST /api/v1/auth/logout/**  
   Добавляет в чёрный лист refresh_token, каким образом позволяет разлогинить юзера (access token на фронте чистится)
+
+- **GET /api/v1/auth/status/**  
+  Возвращает два варианта запроса: {"status": "staff"}, {"status": "user"}, {"status": "unauthentificated"}
+
+
+### Main_app (`/api/v1/work`)
+
+- **POST /api/v1/auth/login/**  
+
+
+
 
 ## Установка и запуск
 

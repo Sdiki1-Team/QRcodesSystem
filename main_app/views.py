@@ -26,7 +26,7 @@ class StartWorkView(APIView):
 
     @swagger_auto_schema(
         security=[{"Bearer": []}],
-        tags=["work"],
+        tags=["Work"],
         operation_description="Начало работы на объекте",
         request_body=StartWorkSerializer,
         responses={
@@ -83,7 +83,7 @@ class EndWorkView(APIView):
 
     @swagger_auto_schema(
         security=[{"Bearer": []}],
-        tags=["work"],
+        tags=["Work"],
         operation_description="Завершение работы на объекте",
         request_body=EndWorkSerializer,
         responses={
@@ -114,8 +114,8 @@ class EndWorkView(APIView):
 class ReviewView(APIView):
     @swagger_auto_schema(
         security=[{"Bearer": []}],
-        tags=["review"],
-        operation_description="Оценка работы",
+        tags=["Review"],
+        operation_summary="Оценка работы",
         request_body=ReviewSerializer,
         responses={200: "Оценка успешно оставлена", 400: "Ошибка оценки"},
     )
@@ -136,7 +136,7 @@ class ObjectStatusView(APIView):
 
     @swagger_auto_schema(
         security=[{"Bearer": []}],
-        tags=["object"],
+        tags=["Object"],
         operation_description="Получение статуса работы пользователя с объектом",
         manual_parameters=[
             openapi.Parameter(
@@ -223,7 +223,7 @@ class WorkHistoryView(generics.ListAPIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        tags=['object'],
+        tags=['Object'],
         operation_description='Получение истории работ пользователя на объекте',
         manual_parameters=[
             openapi.Parameter(

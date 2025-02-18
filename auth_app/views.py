@@ -16,7 +16,7 @@ from .serializers import RegisterSerializer, LoginSerializer, PingSerializer, Re
 
 class RegisterView(APIView):
     @swagger_auto_schema(
-        tags=['auth'], 
+        tags=['Auth'], 
         operation_description="Регистрация новогопользователя",
         request_body=RegisterSerializer,
         responses={
@@ -35,7 +35,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     @swagger_auto_schema(
-        tags=['auth'],
+        tags=['Auth'],
         operation_description="Аутентификация пользователя, возвращается два токена: access и refresh. Длительность refresh токена - 6 месяцев. Длительность access токена - 15 минут. После исчерпания длительности access токена, требуется отправить запрос refresh",
         request_body=LoginSerializer,
         responses={
@@ -45,12 +45,15 @@ class LoginView(APIView):
     )
 
     def post(self, request):
+        print("FLAG1")
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
+            print("FLAG2")
             user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
             if user:
+                print("FLAG3")
                 refresh = RefreshToken.for_user(user)
-                return Response({
+                return Response({   
                     'access_token': str(refresh.access_token),
                     'refresh_token': str(refresh),
                 })
@@ -60,7 +63,7 @@ class LoginView(APIView):
 
 class RefreshTokenView(APIView):
     @swagger_auto_schema(
-        tags=['auth'],
+        tags=['Auth'],
         operation_description="Обновление access token с использованием refresh token ВАЖНО!!! - запускать без Authorization",
         request_body=RefreshTokenSerializer,
         responses={
@@ -89,7 +92,7 @@ class PingView(APIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        tags=['auth'],
+        tags=['Auth'],
         operation_description="Проверка состояния сервера",
         responses={
             200: "Сервер работает",
@@ -103,7 +106,7 @@ class PingView(APIView):
 class LogoutView(APIView):
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        tags=['auth'],
+        tags=['Auth'],
         operation_description="Выход пользователя (удаление всех токенов). Что делается - Удаляется refresh_token. После на frontend надо удалить access токен, таким образом профиль разлогинится)",
         request_body=LogoutSerializer,
         responses={
@@ -129,7 +132,7 @@ class LogoutView(APIView):
 class StatusUser(APIView):
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        tags=['user'],
+        tags=['Auth'],
         operation_description="Статус пользователя",
         responses={200: 'Статус пользователя\n\nМожет быть "staff", "user"\nstaff = прораб\nuser = работник\n', 400: "Ошибка получения статуса пользователя"}
     )
