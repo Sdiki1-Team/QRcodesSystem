@@ -1,8 +1,10 @@
+import stat
+from xml.dom import NotFoundErr
 from rest_framework import status, generics, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
@@ -359,18 +361,21 @@ class WorkImageDetailView(generics.RetrieveAPIView):
         work_id = self.kwargs["work_id"]
         image_id = self.kwargs["image_id"]
 
-        work = Work.objects.get(id=work_id)
-        image = WorkImage.objects.get(id=image_id, work_id=work_id)
+        
+        if WorkImage.objects.filter(id=image_id, work_id=work_id).exists():
+            # print("EXISTS")
+            work = Work.objects.get(id=work_id)
+            image = WorkImage.objects.get(id=image_id, work_id=work_id)
 
-        if not (
-            self.request.user.is_staff
-            or self.request.user.is_superuser
-            or work.user == self.request.user
-        ):
-            raise PermissionDenied()
+            if not (
+                self.request.user.is_staff
+                or self.request.user.is_superuser
+                or work.user == self.request.user
+            ):
+                raise PermissionDenied()
 
-        return image
-
+            return image
+        raise NotFound()
 
 class WorkImageDeleteView(generics.DestroyAPIView):
     queryset = WorkImage.objects.all()
@@ -397,6 +402,7 @@ class WorkImageDeleteView(generics.DestroyAPIView):
         ],
         responses={204: "Удалено", 403: "Доступ запрещен", 404: "Не найдено"},
     )
+    
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
 

@@ -14,5 +14,5 @@ urlpatterns = [
     path('image_work/<int:work_id>/', WorkImageUploadView.as_view(), name='image_upload'),
     path('image_work/<int:work_id>/list/', WorkImageListView.as_view(), name='image_list'),
     path('image_work/<int:work_id>/<int:image_id>/', WorkImageDetailView.as_view(), name='image_detail'),
-    path('image_work/<int:work_id>/<int:image_id>/delete/', WorkImageDeleteView.as_view(), name='image_delete'),
+    path('image_work/<int:work_id>/<int:pk>/delete/', WorkImageDeleteView.as_view(), name='image_delete'),
 ]
