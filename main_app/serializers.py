@@ -100,3 +100,21 @@ class WorkImageSerializer(serializers.ModelSerializer):
         representation['image'] = "/media/" + instance.image.url.replace(settings.MEDIA_URL, '', 1)
         return representation
     
+
+class WorkImageListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkImage
+        fields = ('id', 'image', 'uploaded_at', 'work')
+        read_only_fields = ('work', 'uploaded_at')
+        extra_kwargs = {
+            'image': {'required': True}
+        }
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.image:
+            representation['image'] = "/media/" + instance.image.url.replace(settings.MEDIA_URL, '', 1)
+        else:
+            representation['image'] = None 
+        return representation
+    

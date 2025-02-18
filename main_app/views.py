@@ -10,6 +10,7 @@ from .serializers import (
     WorkSerializer,
     ReviewSerializer,
     WorkImageSerializer,
+    WorkImageListSerializer,
     StartWorkSerializer,
     EndWorkSerializer,
     ObjectSerializer,
@@ -289,7 +290,7 @@ class WorkImageUploadView(generics.CreateAPIView):
 
 
 class WorkImageListView(generics.ListAPIView):
-    serializer_class = WorkImageSerializer
+    serializer_class = WorkImageListSerializer
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -305,7 +306,7 @@ class WorkImageListView(generics.ListAPIView):
             )
         ],
         responses={
-            200: WorkImageSerializer(many=True),
+            200: WorkImageListSerializer(many=True),
             403: "Доступ запрещен",
             404: "Работа не найдена",
         },
