@@ -1,3 +1,5 @@
+from ast import mod
+import datetime
 from django.db import models
 from auth_app.models import CustomUser
 
@@ -25,19 +27,22 @@ class Object(models.Model):
 
 
 class Work(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255, null=True, blank=False)
+    description = models.TextField(null=True, blank=True)
     object = models.ForeignKey(Object, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
 
-    def start_work(self):
-        if Work.objects.filter(user=self.user, end_time__isnull=True).exists():
-            raise ValueError("Пользователь уже работает над другим объектом.")
-        self.start_time = timezone.now()
+    def start_work(self, name: str, description: str = None):
+        self.start_time = datetime.datetime.now()
+        self.name = name
+        self.description = description
         self.save()
 
     def end_work(self):
-        self.end_time = timezone.now()
+        self.end_time = datetime.datetime.now()
         self.save()
 
 
@@ -50,3 +55,9 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review for {self.work.object.name} by {self.supervisor.username}"
+
+class WorkImage(models.Model):
+    work = models.ForeignKey(Work, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
