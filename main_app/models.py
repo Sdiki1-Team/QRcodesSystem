@@ -28,13 +28,17 @@ class Object(models.Model):
 
 class Work(models.Model):
     id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255, null=True, blank=False)
+    description = models.TextField(null=True, blank=True)
     object = models.ForeignKey(Object, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
 
-    def start_work(self):
+    def start_work(self, name: str, description: str = None):
         self.start_time = datetime.datetime.now()
+        self.name = name
+        self.description = description
         self.save()
 
     def end_work(self):

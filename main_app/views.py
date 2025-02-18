@@ -14,6 +14,7 @@ from .serializers import (
     EndWorkSerializer,
     ObjectSerializer,
     StatusResponseSerializer,
+    WorkHistorySerializer,
 )
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
@@ -39,6 +40,8 @@ class StartWorkView(APIView):
         serializer.is_valid(raise_exception=True)
 
         object_id = serializer.validated_data["object"]
+        name = serializer.validated_data["name"]
+        description = serializer.validated_data["description"]
         user = request.user
 
         if Work.objects.filter(user=user, end_time__isnull=True).exists():
@@ -67,7 +70,7 @@ class StartWorkView(APIView):
             )
 
         work = Work.objects.create(object=obj, user=user)
-        work.start_work()
+        work.start_work(name, description)
 
         return Response(
             {"detail": "Работа успешно начата", "work_id": work.id},
@@ -214,7 +217,37 @@ class ObjectStatusView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
+class WorkHistoryView(generics.ListAPIView):
+    serializer_class = WorkHistorySerializer
+    permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        tags=['object'],
+        operation_description='Получение истории работ пользователя на объекте',
+        manual_parameters=[
+            openapi.Parameter(
+                'object_id', openapi.IN_PATH, 
+                description='ID объекта', 
+                type=openapi.TYPE_INTEGER
+            )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        user = self.request.user
+        object_id = self.kwargs['object_id']
+        return Work.objects.filter(
+            object_id=object_id,
+            user=user
+        ).select_related('object', 'user')
+
+
+
+
+# work images
 class WorkImageUploadView(generics.CreateAPIView):
     serializer_class = WorkImageSerializer
     parser_classes = (MultiPartParser, FormParser)
@@ -371,3 +404,4 @@ class WorkImageDeleteView(generics.DestroyAPIView):
         if work.end_time is not None or work.user != self.request.user:
             raise PermissionDenied("Нельзя удалять изображения завершенной работы")
         instance.delete()
+

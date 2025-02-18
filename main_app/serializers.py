@@ -18,7 +18,7 @@ class ObjectSerializer(serializers.ModelSerializer):
 class WorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Work
-        fields = ['id', 'start_time', 'end_time']
+        fields = ['id', 'name', 'description', 'start_time', 'end_time']
 
 class ObjectStatsSerializer(serializers.Serializer):
     total_completed_works = serializers.IntegerField()
@@ -33,12 +33,25 @@ class StatusResponseSerializer(serializers.Serializer):
         required=False
     )
     stats = ObjectStatsSerializer()
+
+class WorkHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Work
+        fields = ['id', 'name', 'description', 'start_time', 'end_time', 'user']
     
 class StartWorkSerializer(serializers.Serializer):
     object = serializers.IntegerField(
         required=True,
         help_text="ID объекта для начала работы",
-        min_value=1  # Гарантируем положительный ID
+        min_value=1 
+    )
+    name = serializers.CharField(
+        required=True,
+        help_text="Название выполняемой работы"
+    )
+    description = serializers.CharField(
+        required=False,
+        help_text="Описание выполняемой работы"
     )
 
     def validate_object(self, value):
