@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .  
+    container_name: backend
+    volumes:
+      - .:/app  
+    ports:
+      - "${DJANGO_PORT}:${DJANGO_PORT}"
+    environment:
+      - DEBUG=${DEBUG}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+    command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
+    depends_on:
+      - db
+
+
+  frontend:
+    image: node:20 
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - frontend:/app  
+    working_dir: /app
+    command: >
+      sh -c "
+        git clone --branch master https://github.com/The-Mixa/QRcodiky.git . && 
+        npm install && 
+        npm run build && 
+        npm start"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
+      - frontend
+
+  db:
+    image: postgres:13
+    container_name: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+
+volumes:
+  postgres_data:
+  frontend:
