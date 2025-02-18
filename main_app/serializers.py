@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied 
 from django.contrib.auth import authenticate
+from django.conf import settings
 from .models import Object, Work, Review, WorkImage
 
 
@@ -93,3 +94,9 @@ class WorkImageSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'image': {'required': True}
         }
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['image'] = "/media/" + instance.image.url.replace(settings.MEDIA_URL, '', 1)
+        return representation
+    

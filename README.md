@@ -43,10 +43,6 @@
   Возвращает два варианта запроса: {"status": "staff"}, {"status": "user"}, {"status": "unauthentificated"}
 
 
-### Main_app (`/api/v1/work`)
-
-- **POST /api/v1/auth/login/**  
-
 
 
 
