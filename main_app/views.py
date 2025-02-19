@@ -1,4 +1,5 @@
 import stat
+from urllib import response
 from xml.dom import NotFoundErr
 from rest_framework import status, generics, serializers
 from rest_framework.views import APIView
@@ -501,3 +502,21 @@ class UserWorksWithReviewsAndImagesView(APIView):
 
         serializer = WorkWithReviewAndImagesSerializer(works, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class WorkDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Work"],
+        operation_description="Получение работы пользователя с оценкой(ели имеется) и фотографией",
+        responses={200: "работа с оценкой(если имеется) и фотографиями", 404: "Работы не найдены"},
+    )
+
+    def get(self, request, work_id):
+        work = Work.objects.get(id=work_id)
+        if work:
+            work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+            serializer = WorkWithReviewAndImagesSerializer(work, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "Работа не найдена"}, status=status.HTTP_404_NOT_FOUND)
