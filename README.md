@@ -23,7 +23,9 @@
 ## Swagger
 По пути `/swagger/` можно открыть Swagger UI для документации и тестирования API.
 
-### Auth (`/api/v1/auth`)
+### Backend Project (`/api/v1/`)
+
+#### Auth (`/api/v1/auth`)
 - **POST /api/v1/auth/login/**  
   Авторизация пользователя. Возвращает `access_token` и `refresh_token`.
   
@@ -43,8 +45,6 @@
   Возвращает два варианта запроса: {"status": "staff"}, {"status": "user"}, {"status": "unauthentificated"}
 
 
-### Work and Object (`/api/v1/`)
-
 #### Object
 - **GET /api/v1/object/status/{object_id}**
   Получение статуса объекта для пользователя и другой информации. Может вернуть разные сущности: [ busy, start, work, review, not_found, forbidden ]
@@ -60,7 +60,7 @@
   Окончание работы, на вход идет айди работы
 
 #### Image
-  Все взаимодействия с image производятся только на незавершенной работе от пользователя, который работает
+Все взаимодействия с image производятся только на незавершенной работе от пользователя, который работает
 - **POST /api/v1/image_work/{work_id}/**
   Загрузка фотографии, которая коннектится к работе
 
@@ -73,7 +73,7 @@
 - **GET /api/v1/image_work/{work_id}/{image_id}/delete/**
   Получение фотографии по айди работы и айди фото (на всякий случай)
 
-  
+
 ## Установка и запуск
 
 ### Требования
@@ -113,11 +113,13 @@
 ## Структура файловой системы
 ```plaintext
 QRSystem/
-├── admin_panel/           # Приложение для админ-панели
 ├── auth_app/              # Приложение для авторизации и аутентификации
-├── main_admin/            # Приложение для панели администратора
-├── main_worker/           # Приложение для панели рабочего
-├── QRSystem/             # Основная директория проекта
+├── main_app/            # Приложение для панели администратора
+├── frontend/            # Frontend часть проекта
+│   ├── public/       
+│   └── src/       
+│
+├── backend/             # Основная директория проекта
 │   ├── settings.py        # Настройки проекта
 │   ├── urls.py            # Маршруты проекта
 │   └── wsgi.py            # WSGI-конфигурация
@@ -167,7 +169,7 @@ docker-compose up --build
 Если нужно запустить только бэкенд и базу данных (например, для разработки), выполните следующую команду:
 
 ```bash
-docker-compose -f docker-compose.development.yml up --build
+docker-compose -f docker_compose/docker-compose.development.yml up --build
 ```
 
 - **Что происходит**:
@@ -182,7 +184,15 @@ docker-compose -f docker-compose.development.yml up --build
 Если нужно запустить бэкенд, фронтенд из ветки `dev` и Nginx, выполните команду:
 
 ```bash
-docker-compose -f docker-compose.beta.yml up --build
+docker-compose -f docker_compose/docker-compose.beta.yml up --build
+```
+
+### 3. Запуск бэкенда, фронтенда (из директории в проекте frontend) и Nginx 
+
+Если нужно запустить бэкенд, фронтенд из ветки `dev` и Nginx, выполните команду:
+
+```bash
+docker-compose -f docker_compose/docker-compose.frontend.yml up --build
 ```
 
 - **Что происходит**:
