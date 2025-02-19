@@ -3,10 +3,10 @@ version: '3.8'
 services:
   backend:
     build:
-      context: .  
+      context: ..
     container_name: backend
     volumes:
-      - .:/app  
+      - ..:/app  
     ports:
       - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
@@ -27,19 +27,19 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ../docker_compose/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - backend
       - frontend
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
     container_name: frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
     depends_on:
       - backend
 
