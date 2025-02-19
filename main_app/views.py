@@ -18,6 +18,7 @@ from .serializers import (
     ObjectSerializer,
     StatusResponseSerializer,
     WorkHistorySerializer,
+    WorkWithReviewAndImagesSerializer
 )
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
@@ -114,25 +115,6 @@ class EndWorkView(APIView):
         )
 
 
-class ReviewView(APIView):
-    @swagger_auto_schema(
-        security=[{"Bearer": []}],
-        tags=["Review"],
-        operation_summary="Оценка работы",
-        request_body=ReviewSerializer,
-        responses={200: "Оценка успешно оставлена", 400: "Ошибка оценки"},
-    )
-    def post(self, request, work_id):
-        review_data = request.data
-        review_data["work"] = work_id
-        serializer = ReviewSerializer(data=review_data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"detail": "Оценка успешно оставлена"}, status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ObjectStatusView(APIView):
     permission_classes = [IsAuthenticated]
@@ -221,13 +203,13 @@ class ObjectStatusView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 class WorkHistoryView(generics.ListAPIView):
-    serializer_class = WorkHistorySerializer
+    serializer_class = WorkWithReviewAndImagesSerializer
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
         tags=['Object'],
-        operation_description='Получение истории работ пользователя на объекте',
+        operation_description='Получение истории работ пользователя на объекте с оценками и изображениями',
         manual_parameters=[
             openapi.Parameter(
                 'object_id', openapi.IN_PATH, 
@@ -240,12 +222,17 @@ class WorkHistoryView(generics.ListAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        user = self.request.user
         object_id = self.kwargs['object_id']
-        return Work.objects.filter(
-            object_id=object_id,
-            user=user
-        ).select_related('object', 'user')
+        
+        works = Work.objects.filter(object_id=object_id)
+        if not works:
+            return []
+        
+        for work in works:
+            work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+
+        return works
+
 
 
 
@@ -412,3 +399,105 @@ class WorkImageDeleteView(generics.DestroyAPIView):
             raise PermissionDenied("Нельзя удалять изображения завершенной работы")
         instance.delete()
 
+
+
+
+class ReviewCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Review"],
+        operation_summary="Оценка работы",
+        request_body=ReviewSerializer,
+        responses={200: "Оценка успешно оставлена", 400: "Ошибка валидации"},
+    )
+    def post(self, request, work_id):
+        work = Work.objects.filter(id=work_id).first()
+        
+        if not work:
+            return Response(
+                {"error": "Работа не найдена."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        if not request.user.is_staff and request.user:
+            return Response(
+                {"error": "Вы не можете оставить отзыв на эту работу."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        review_data = request.data
+        review_data['work'] = work_id
+        review_data['supervisor'] = request.user.id  
+        
+        serializer = ReviewSerializer(data=review_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"detail": "Оценка успешно оставлена"},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class WorksWithoutReviewsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Review"],
+        operation_summary="Получить работы без отзывов",
+        responses={200: "Список работ без отзывов", 404: "Работы не найдены"},
+    )
+    def get(self, request):
+        if request.user.is_staff:
+            works_without_reviews = Work.objects.filter(review__isnull=True)
+            if not works_without_reviews:
+                return Response({"error": "Работы без отзывов не найдены."}, status=404)
+            
+            serializer = WorkSerializer(works_without_reviews, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "У пользователя нет доступа к этому методу"}, status=status.HTTP_403_FORBIDDEN)
+    
+class UserWorksWithReviewsAndImagesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Work"],
+        operation_description="Получение всех работ пользователя с оценками и фотографиями",
+        responses={200: "Список работ с оценками и фотографиями", 404: "Работы не найдены"},
+    )
+    def get(self, request):
+        # Получаем все работы пользователя
+        user = request.user
+        works = Work.objects.filter(user=user)
+
+        if not works:
+            return Response({"error": "Работы не найдены."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Сериализуем работы с оценками и изображениями
+        serializer = WorkWithReviewAndImagesSerializer(works, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserWorksWithReviewsAndImagesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Work"],
+        operation_description="Получение всех работ пользователя с оценками и фотографиями",
+        responses={200: "Список работ с оценками и фотографиями", 404: "Работы не найдены"},
+    )
+    def get(self, request):
+        user = request.user
+        works = Work.objects.filter(user=user)
+        if not works:
+            return Response({"error": "Работы не найдены."}, status=status.HTTP_404_NOT_FOUND)
+        
+        for work in works:
+            work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+
+        serializer = WorkWithReviewAndImagesSerializer(works, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

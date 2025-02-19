@@ -84,7 +84,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['work', 'supervisor', 'rating', 'comment', 'review_date']
-
+        read_only_fields = ['supervisor']
 
 class WorkImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,3 +118,30 @@ class WorkImageListSerializer(serializers.ModelSerializer):
             representation['image'] = None 
         return representation
     
+class ReviewSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment', 'review_date']
+
+class WorkImageListSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = WorkImage
+        fields = ('id', 'uploaded_at', 'image')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.image:
+            representation['image'] = "/media/" + instance.image.url.replace(settings.MEDIA_URL, '', 1)
+        else:
+            representation['image'] = None 
+        return representation
+
+
+class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
+    review = ReviewSerializer2(read_only=True, required=False)
+    images = WorkImageListSerializer2(many=True, read_only=True, required=False, default=[])
+
+    class Meta:
+        model = Work
+        fields = ['id', 'name', 'description', 'start_time', 'end_time', 'review', 'images']
+
