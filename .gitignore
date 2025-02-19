@@ -171,3 +171,5 @@ cython_debug/
 .pypirc
 frontend
 media
+.DS_Store
+*/.DS_Store
