@@ -45,13 +45,10 @@ class LoginView(APIView):
     )
 
     def post(self, request):
-        print("FLAG1")
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            print("FLAG2")
             user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
             if user:
-                print("FLAG3")
                 refresh = RefreshToken.for_user(user)
                 return Response({   
                     'access_token': str(refresh.access_token),
