@@ -1,3 +1,4 @@
+import datetime
 import stat
 from urllib import response
 from xml.dom import NotFoundErr
@@ -15,6 +16,7 @@ from .serializers import (
     WorkImageSerializer,
     WorkImageListSerializer,
     StartWorkSerializer,
+    StartFreeWorkSerializer,
     EndWorkSerializer,
     ObjectSerializer,
     StatusResponseSerializer,
@@ -81,6 +83,56 @@ class StartWorkView(APIView):
         return Response(
             {"detail": "Работа успешно начата", "work_id": work.id},
             status=status.HTTP_201_CREATED,
+        )
+
+class StartFreeWorkView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Work"],
+        operation_description="Начать выполнять работу на объекте",
+        request_body=StartFreeWorkSerializer,
+        responses={
+            200: "Работа началась",
+            400: "Ошибка валидации",
+            403: "Доступ запрещен",
+        },
+    )
+    def post(self, request):
+        serializer = StartFreeWorkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        work_id = serializer.validated_data["work_id"]
+        user = request.user
+
+        if Work.objects.filter(user=user, end_time__isnull=True).exists():
+            return Response(
+                {"error": "Пользователь уже работает."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+
+        try:
+            work = Work.objects.get(id=work_id)
+            if user not in work.object.worker.all() and user != work.object.supervisor:
+                return Response(
+                    {"error": "Нет прав для работы с этим объектом"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        except Object.DoesNotExist:
+            return Response(
+                {"error": "Объект не найден"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        work = Work.objects.get(id=work_id)
+        work.start_time = datetime.datetime.now()
+        work.user=user
+        work.save()
+
+        return Response(
+            {"detail": "Работа успешно начата", "work_id": work.id},
+            status=status.HTTP_200_OK,
         )
 
 

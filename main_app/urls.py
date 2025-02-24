@@ -1,10 +1,11 @@
 from django.urls import path
-from .views import GetFreeWorksView, StartWorkView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
+from .views import GetFreeWorksView,StartFreeWorkView, StartWorkView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
 from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
     path('start/', StartWorkView.as_view(), name='start_work'),
+    path('free-work/start/', StartFreeWorkView.as_view(), name='start_work'),
     path('end/', EndWorkView.as_view(), name='end_work'),
     path("info/<int:work_id>/", WorkDetailView.as_view(), name="work-detail"),
 

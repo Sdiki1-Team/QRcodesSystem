@@ -61,6 +61,21 @@ class StartWorkSerializer(serializers.Serializer):
             raise serializers.ValidationError("Объект с таким ID не существует")
         return value
     
+
+class StartFreeWorkSerializer(serializers.Serializer):
+    work_id = serializers.IntegerField(
+        required=True,
+        help_text="ID работы для начала работы",
+        min_value=1
+    )
+
+    def validate_object(self, value):
+        """Проверяем существование работы"""
+        if not Work.objects.filter(id=value, time_start=None).exists():
+            raise serializers.ValidationError("Работы с таким ID не существует или уже начата")
+        return value
+    
+
 class EndWorkSerializer(serializers.Serializer):
     work_id = serializers.IntegerField(
         required=True,
