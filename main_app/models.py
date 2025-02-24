@@ -28,10 +28,10 @@ class Object(models.Model):
 
 class Work(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=True, blank=False)
+    name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    object = models.ForeignKey(Object, on_delete=models.CASCADE)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    object = models.ForeignKey(Object, on_delete=models.CASCADE) 
+    user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
 

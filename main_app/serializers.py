@@ -145,3 +145,10 @@ class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
         model = Work
         fields = ['id', 'name', 'description', 'start_time', 'end_time', 'review', 'images']
 
+
+class WorkFreeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Work
+        fields = ['id', 'name', 'description']
+

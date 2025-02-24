@@ -19,7 +19,8 @@ from .serializers import (
     ObjectSerializer,
     StatusResponseSerializer,
     WorkHistorySerializer,
-    WorkWithReviewAndImagesSerializer
+    WorkWithReviewAndImagesSerializer,
+    WorkFreeSerializer
 )
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
@@ -460,26 +461,6 @@ class WorksWithoutReviewsView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "У пользователя нет доступа к этому методу"}, status=status.HTTP_403_FORBIDDEN)
     
-class UserWorksWithReviewsAndImagesView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        security=[{"Bearer": []}],
-        tags=["Work"],
-        operation_description="Получение всех работ пользователя с оценками и фотографиями",
-        responses={200: "Список работ с оценками и фотографиями", 404: "Работы не найдены"},
-    )
-    def get(self, request):
-        # Получаем все работы пользователя
-        user = request.user
-        works = Work.objects.filter(user=user)
-
-        if not works:
-            return Response({"error": "Работы не найдены."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Сериализуем работы с оценками и изображениями
-        serializer = WorkWithReviewAndImagesSerializer(works, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserWorksWithReviewsAndImagesView(APIView):
@@ -520,3 +501,24 @@ class WorkDetailView(APIView):
             serializer = WorkWithReviewAndImagesSerializer(work, many=False)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "Работа не найдена"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+class GetFreeWorksView(APIView):
+    serializer_class = WorkFreeSerializer
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Work"],
+        operation_description="Получение работ, которые можно начать на этом объекте",
+        responses={200: "работы", 404: "Работы не найдены"},
+    )
+    def get(self, request, object_id):
+        # self.get("object_id")
+        works = Work.objects.filter(object_id=object_id, start_time=None).all()
+        if not works or works==[]:
+            print("NO WORKS")
+            return Response([], 200)
+        print("WORKS")
+        serializer = WorkFreeSerializer(works, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

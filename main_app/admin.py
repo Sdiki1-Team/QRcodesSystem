@@ -6,11 +6,11 @@ from auth_app.models import CustomUser
 class WorkInline(admin.TabularInline):
     model = Work
     extra = 0
-    fields = ('user', 'start_time', 'end_time', 'work_status')
+    fields = ('name', 'description', 'start_time', 'end_time', 'work_status')
     readonly_fields = ('work_status',)
 
     def work_status(self, obj):
-        return "В процессе" if obj.end_time is None else "Завершено"
+        return "Не начата" if obj.start_time is None else "В процессе" if obj.end_time is None else "Завершено"
     work_status.short_description = "Статус работы"
 
 class WorkImageInline(admin.TabularInline):
