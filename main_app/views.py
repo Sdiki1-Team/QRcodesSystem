@@ -1,6 +1,8 @@
 import datetime
+from email.policy import HTTP
+import re
 import stat
-from urllib import response
+from urllib import request, response
 from xml.dom import NotFoundErr
 from rest_framework import status, generics, serializers
 from rest_framework.views import APIView
@@ -10,8 +12,11 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
+
+from auth_app.models import CustomUser
 from .serializers import (
     WorkSerializer,
+    WorkSerializer2,
     ReviewSerializer,
     WorkImageSerializer,
     WorkImageListSerializer,
@@ -22,7 +27,8 @@ from .serializers import (
     StatusResponseSerializer,
     WorkHistorySerializer,
     WorkWithReviewAndImagesSerializer,
-    WorkFreeSerializer
+    WorkFreeSerializer,
+    UserSerializer
 )
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
@@ -157,7 +163,7 @@ class EndWorkView(APIView):
 
         work_id = serializer.validated_data["work_id"]
         work = Work.objects.get(id=work_id)
-
+        work.worker_comment = serializer.validated_data["comment"]
         work.end_work()
         return Response(
             {
@@ -277,8 +283,17 @@ class WorkHistoryView(generics.ListAPIView):
 
     def get_queryset(self):
         object_id = self.kwargs['object_id']
-        
-        works = Work.objects.filter(object_id=object_id)
+        if not(self.request.user.is_staff or self.request.user.is_superuser):
+            works = Work.objects.filter(object_id=object_id, user=self.request.user).all()
+            if not works:
+                return []
+            
+            for work in works:
+                work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+
+            return works
+
+        works = Work.objects.filter(object_id=object_id).all()
         if not works:
             return []
         
@@ -509,10 +524,62 @@ class WorksWithoutReviewsView(APIView):
             if not works_without_reviews:
                 return Response({"error": "Работы без отзывов не найдены."}, status=404)
             
-            serializer = WorkSerializer(works_without_reviews, many=True)
+            serializer = WorkSerializer2(works_without_reviews, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "У пользователя нет доступа к этому методу"}, status=status.HTTP_403_FORBIDDEN)
     
+
+class WorksWithoutReviewsObjectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["Review"],
+        operation_summary="Получить работы без отзывов",
+        responses={200: "Список работ без отзывов", 404: "Работы не найдены"},
+    )
+    def get(self, request, object_id):
+        if request.user.is_staff or request.user.is_superuser:
+            works_without_reviews = Work.objects.filter(review__isnull=True, object=object_id)
+            if not works_without_reviews:
+                return Response({"error": "Работы без отзывов не найдены."}, status=404)
+            for work in works_without_reviews:
+                work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+            serializer = WorkSerializer2(works_without_reviews, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "У пользователя нет доступа к этому методу"}, status=status.HTTP_403_FORBIDDEN)
+
+
+class WorksWithReviewsObjectView(generics.ListAPIView):
+    serializer_class = WorkWithReviewAndImagesSerializer
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        tags=['Object'],
+        operation_description='Получение истории работ на объекте с отзывами и изображениями',
+        manual_parameters=[
+            openapi.Parameter(
+                'object_id', openapi.IN_PATH, 
+                description='ID объекта', 
+                type=openapi.TYPE_INTEGER
+            )
+        ]
+    )
+    
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        object_id = self.kwargs['object_id']
+        if not(self.request.user.is_staff or self.request.user.is_superuser) :
+            works = Work.objects.filter(object_id=object_id, review__isnull=True).all()
+            if not works:
+                return []
+            
+            for work in works:
+                work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+
+            return works
 
 
 class UserWorksWithReviewsAndImagesView(APIView):
@@ -528,7 +595,7 @@ class UserWorksWithReviewsAndImagesView(APIView):
         user = request.user
         works = Work.objects.filter(user=user)
         if not works:
-            return Response({"error": "Работы не найдены."}, status=status.HTTP_404_NOT_FOUND)
+            return Response([], status=status.HTTP_200_OK)
         
         for work in works:
             work.images = list(WorkImage.objects.filter(work_id=work.id).all())
@@ -563,14 +630,31 @@ class GetFreeWorksView(APIView):
         security=[{"Bearer": []}],
         tags=["Work"],
         operation_description="Получение работ, которые можно начать на этом объекте",
-        responses={200: "работы", 404: "Работы не найдены"},
+        responses={200: "работы"},
     )
     def get(self, request, object_id):
         # self.get("object_id")
         works = Work.objects.filter(object_id=object_id, start_time=None).all()
         if not works or works==[]:
-            print("NO WORKS")
+            # print("NO WORKS")
             return Response([], 200)
         print("WORKS")
         serializer = WorkFreeSerializer(works, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["User"],
+        operation_description="Получение информации о пользователе по его айди",
+        responses={200: UserSerializer(many=False), 404: "User not found"},
+    )
+    def get(self, request, user_id):
+        user = CustomUser.objects.get(id=user_id)
+        if user:
+            serializer = UserSerializer(user, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    

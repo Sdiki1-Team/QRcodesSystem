@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GetFreeWorksView,StartFreeWorkView, StartWorkView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
+from .views import GetFreeWorksView,StartFreeWorkView, StartWorkView, UserInfoView, WorksWithoutReviewsObjectView, WorksWithReviewsObjectView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -20,7 +20,10 @@ urlpatterns = [
     path('image_work/<int:work_id>/<int:pk>/delete/', WorkImageDeleteView.as_view(), name='image_delete'),
 
     path('user/works/', UserWorksWithReviewsAndImagesView.as_view(), name='user-works-with-reviews-and-images'),
+    path("user/info/<int:user_id>/", UserInfoView.as_view(), name="user-info"),
 
     path('review/<int:work_id>/', ReviewCreateView.as_view(), name='create-review'),
     path('works_without_reviews/', WorksWithoutReviewsView.as_view(), name='works-without-reviews'),
+    path('object/works_without_reviews/<int:object_id>/', WorksWithoutReviewsObjectView.as_view(), name='works-without-reviews'),
+    path('object/works_with_reviews/<int:object_id>/', WorksWithReviewsObjectView.as_view(), name='works-without-reviews'),
 ]

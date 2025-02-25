@@ -1,9 +1,12 @@
 
 from urllib import request
+from pkg_resources import require
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied 
 from django.contrib.auth import authenticate
 from django.conf import settings
+
+from auth_app.models import CustomUser
 from .models import Object, Work, Review, WorkImage
 
 
@@ -20,7 +23,7 @@ class ObjectSerializer(serializers.ModelSerializer):
 class WorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Work
-        fields = ['id', 'name', 'description', 'start_time', 'end_time']
+        fields = ['id', 'name', 'description', 'worker_comment', 'user', 'start_time', 'end_time']
 
 class ObjectStatsSerializer(serializers.Serializer):
     total_completed_works = serializers.IntegerField()
@@ -83,7 +86,10 @@ class EndWorkSerializer(serializers.Serializer):
         min_value=1,
         help_text="ID работы для завершения"
     )
-
+    comment = serializers.CharField(
+        required=False,
+        help_text="Комментарий от работника"
+    )
     def validate_work_id(self, value):
         """Проверяем существование работы и права доступа"""
         try:
@@ -159,7 +165,7 @@ class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
     object = ObjectSerializer(many=False, required=False)
     class Meta:
         model = Work
-        fields = ['id', 'object', 'name',  'description', 'start_time', 'end_time', 'review', 'images']
+        fields = ['id', 'object', 'name',  'description', 'worker_comment', 'start_time', 'end_time', 'review', 'images']
 
 
 class WorkFreeSerializer(serializers.ModelSerializer):
@@ -168,3 +174,20 @@ class WorkFreeSerializer(serializers.ModelSerializer):
         model = Work
         fields = ['id', 'name', 'description']
 
+
+class UserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'fullname', 'username']
+
+
+
+class WorkSerializer2(serializers.ModelSerializer):
+    
+    images = WorkImageListSerializer2(many=True, read_only=True, required=False, default=[])
+    object = ObjectSerializer(many=False, required=False)
+    
+    class Meta:
+        model = Work
+        fields = ['id', 'name', 'description', 'worker_comment', 'user', 'start_time', 'end_time', 'images', 'object']
