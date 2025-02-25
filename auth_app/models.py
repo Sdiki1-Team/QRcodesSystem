@@ -18,6 +18,7 @@ class CustomUser(AbstractUser):
         help_text='Specific permissions for this user.',
         verbose_name='user permissions',
     )
+    fullname = models.CharField(blank=True, null=True)
 
     def __str__(self):
         return self.username
