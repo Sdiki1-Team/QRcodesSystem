@@ -1,4 +1,5 @@
 
+from urllib import request
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied 
 from django.contrib.auth import authenticate
@@ -155,10 +156,10 @@ class WorkImageListSerializer2(serializers.ModelSerializer):
 class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
     review = ReviewSerializer2(read_only=True, required=False)
     images = WorkImageListSerializer2(many=True, read_only=True, required=False, default=[])
-
+    object = ObjectSerializer(many=False, required=False)
     class Meta:
         model = Work
-        fields = ['id', 'name', 'description', 'start_time', 'end_time', 'review', 'images']
+        fields = ['id', 'object', 'name',  'description', 'start_time', 'end_time', 'review', 'images']
 
 
 class WorkFreeSerializer(serializers.ModelSerializer):
