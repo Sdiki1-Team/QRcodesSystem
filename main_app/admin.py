@@ -25,11 +25,19 @@ class WorkImageInline(admin.TabularInline):
 
 @admin.register(Object)
 class ObjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'deadline', 'status', 'supervisor', 'start_time', 'end_time')
+    list_display = ('name', 'address', 'deadline', 'status', 'supervisor', 'start_time', 'end_time', 'qr_code_link')
     list_filter = ('status', 'supervisor')
     search_fields = ('name', 'address')
     filter_horizontal = ('worker',)
     inlines = [WorkInline]
+
+    def qr_code_link(self, obj):
+        if obj.qr_code:
+            return format_html('<a href="{0}" target="_blank">{1}</a>', obj.qr_code, obj.qr_code)
+        return "-"
+    qr_code_link.short_description = 'QR Code Link'
+
+    readonly_fields = ('qr_code',)  # QR-код будет только для просмотра, без возможности редактирования
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "worker":
@@ -48,6 +56,7 @@ class ObjectAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
 
 @admin.register(Work)
 class WorkAdmin(admin.ModelAdmin):

@@ -2,8 +2,9 @@ from ast import mod
 import datetime
 from django.db import models
 from auth_app.models import CustomUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
-# Create your models here.
 class Object(models.Model):
     STATUS_CHOICES = (
         ('not_started', 'Не начато'),
@@ -24,6 +25,14 @@ class Object(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# Сигнал, который будет генерировать URL для qr_code после сохранения объекта
+@receiver(post_save, sender=Object)
+def generate_qr_code(sender, instance, created, **kwargs):
+    if created:
+        instance.qr_code = f"https://nikitacmo949.ru/get_by_qr/{instance.id}/"
+        instance.save()
 
 
 class Work(models.Model):
