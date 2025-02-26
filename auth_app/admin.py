@@ -4,7 +4,7 @@ from .models import CustomUser
 
 class CustomUserAdmin(UserAdmin):
     list_display = ('id', 'username', 'fullname', 'email', 'is_staff', 'is_active')
-    
+
     fieldsets = (
         (None, {'fields': ('fullname', 'username', 'password')}),
         ('Personal info', {'fields': ('email',)}),
@@ -13,14 +13,14 @@ class CustomUserAdmin(UserAdmin):
         }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
-    
+
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('id', 'username', 'fullname', 'email', 'password1', 'password2'),
+            'fields': ('username', 'fullname', 'email', 'password1', 'password2'),
         }),
     )
-    
+
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
     search_fields = ('username', 'email')
 
