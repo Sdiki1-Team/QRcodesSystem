@@ -2,7 +2,11 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import Object, Work, Review, WorkImage
 from auth_app.models import CustomUser
-
+import qrcode
+import base64
+from django.urls import path
+from io import BytesIO
+from django.http import HttpResponse
 from django.contrib.auth.models import User, Group
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
@@ -28,37 +32,105 @@ class WorkImageInline(admin.TabularInline):
 
 @admin.register(Object)
 class ObjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'deadline', 'status', 'supervisor', 'start_time', 'end_time', 'qr_code_link')
-    list_filter = ('status', 'supervisor')
+    list_display = ('name', 'address', 'deadline', 'my_status', 'supervisor', 'start_time', 'end_time', 'qr_code_link')
     search_fields = ('name', 'address')
     filter_horizontal = ('worker',)
     inlines = [WorkInline]
 
     def qr_code_link(self, obj):
         if obj.qr_code:
-            return format_html('<a href="{0}" target="_blank">{1}</a>', obj.qr_code, obj.qr_code)
-        return "-"
-    qr_code_link.short_description = 'QR Code Link'
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+            qr.add_data(obj.qr_code)  #
+            qr.make(fit=True)
+            img = qr.make_image(fill='black', back_color='white')
 
-    readonly_fields = ('qr_code',)
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+            # Вставляем base64-код в тег <img> для отображения
+            return format_html('<img src="data:image/png;base64,{}" style="max-height: 100px;" />', qr_code_base64)
+
+    qr_code_link.short_description = 'QR Code'
+
+    readonly_fields = ('qr_code', 'qr_code_link', 'qr_code_download', 'my_status')
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "worker":
             kwargs["queryset"] = CustomUser.objects.all()
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('download_qr/<int:object_id>/', self.admin_site.admin_view(self.download_qr_code), name='download_qr'),  # Правильный URL для скачивания
+        ]
+        return custom_urls + urls
+
+    def download_qr_code(self, request, object_id):
+        obj = self.get_object(request, object_id)
+        if obj and obj.qr_code:
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+            qr.add_data(obj.qr_code)
+            qr.make(fit=True)
+            img = qr.make_image(fill='black', back_color='white')
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            buffered.seek(0)
+            response = HttpResponse(buffered, content_type='image/png')
+            response['Content-Disposition'] = f'attachment; filename="qr_code_{object_id}.png"'
+            return response
+        return HttpResponse("QR Code not found", status=404)
+    
+    def my_status(self, obj):
+        works = Work.objects.filter(object=obj)
+
+        if not works.exists() or all(work.start_time is None for work in works):
+            return format_html(
+                '<span style="display: inline-block; width: 12px; height: 12px; background-color: red; border-radius: 50%; margin-right: 8px;"></span>'
+                '<span>Не начато</span>'
+            )
+
+        if all(work.end_time is not None for work in works):
+            return format_html(
+                '<span style="display: inline-block; width: 12px; height: 12px; background-color: green; border-radius: 50%; margin-right: 8px;"></span>'
+                '<span>Завершено</span>'
+            )
+
+        return format_html(
+            '<span style="display: inline-block; width: 12px; height: 12px; background-color: yellow; border-radius: 50%; margin-right: 8px;"></span>'
+            '<span>В процессе</span>'
+        )
+
+    my_status.short_description = 'Статус' 
+
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        custom_fieldsets = list(fieldsets)
+        return custom_fieldsets
+
+    def qr_code_download(self, obj):
+        if obj.qr_code:
+            download_url = f"/admin/main_app/object/download_qr/{obj.id}/"
+            return format_html('<a class="button" href="{}">Download QR Code</a>', download_url)
+        return "QR код не доступен"
+
+    qr_code_download.short_description = "Download QR Code"
+
     fieldsets = (
         (None, {
             'fields': ('name', 'address', 'task_description')
         }),
         ('Детали', {
-            'fields': ('deadline', 'status', 'supervisor', 'worker', 'qr_code')
+            'fields': ('deadline', 'my_status', 'supervisor', 'worker', 'qr_code', 'qr_code_link', 'qr_code_download')
         }),
         ('Временные метки', {
             'fields': ('start_time', 'end_time'),
             'classes': ('collapse',)
         }),
     )
+
 
 
 @admin.register(Work)
@@ -81,20 +153,57 @@ class WorkAdmin(admin.ModelAdmin):
                 work.end_work()
     end_work.short_description = "Завершить выбранные работы"
 
+
+
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('work', 'supervisor', 'rating', 'review_date')
+    list_display = ('work_name', 'supervisor', 'rating', 'review_date')
     list_filter = ('rating', 'supervisor')
     raw_id_fields = ('work', 'supervisor')
+    readonly_fields = ('work_name', 'work_description', 'work_start_time', 'work_end_time', 'work_worker_comment', 'worker_name', 'worker_username')
+
+    def work_name(self, obj):
+        return obj.work.name if obj.work else "Не указано"
+    work_name.short_description = "Название работы"
+
+    def work_description(self, obj):
+        return obj.work.description if obj.work else "Не указано"
+    work_description.short_description = "Описание работы"
+
+    def work_start_time(self, obj):
+        return obj.work.start_time if obj.work else "Не указано"
+    work_start_time.short_description = "Время начала"
+
+    def work_end_time(self, obj):
+        return obj.work.end_time if obj.work else "Не указано"
+    work_end_time.short_description = "Время окончания"
+
+    def work_worker_comment(self, obj):
+        return obj.work.worker_comment if obj.work else "Не указано"
+    work_worker_comment.short_description = "Комментарий работника"
+
+    def worker_name(self, obj):
+        return obj.work.user.fullname if obj.work and obj.work.user else "Не указано"
+    worker_name.short_description = "Имя работника"
+
+    def worker_username(self, obj):
+        return obj.work.user.username if obj.work and obj.work.user else "Не указано"
+    worker_username.short_description = "Ник работника"
 
     fieldsets = (
-        (None, {
-            'fields': ('work', 'supervisor')
+        ('Информация о работе', {
+            'fields': ('work_name', 'work_description', 'work_start_time', 'work_end_time', 'work_worker_comment'),
+        }),
+        ('Информация о работнике', {
+            'fields': ('worker_name', 'worker_username')
         }),
         ('Оценка', {
             'fields': ('rating', 'comment')
         }),
     )
+
+
+
 
 @admin.register(WorkImage)
 class WorkImageAdmin(admin.ModelAdmin):

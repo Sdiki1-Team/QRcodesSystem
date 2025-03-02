@@ -578,7 +578,7 @@ class WorksWithReviewsObjectView(generics.ListAPIView):
             
             for work in works:
                 work.images = list(WorkImage.objects.filter(work_id=work.id).all())
-
+                
             return works
 
 

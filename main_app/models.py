@@ -7,17 +7,12 @@ from django.dispatch import receiver
 import os
 
 class Object(models.Model):
-    STATUS_CHOICES = (
-        ('not_started', 'Не начато'),
-        ('in_progress', 'В процессе'),
-        ('completed', 'Завершено'),
-    )
+    
 
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     task_description = models.TextField()
     deadline = models.DateTimeField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     worker = models.ManyToManyField(CustomUser, related_name='assigned_objects', blank=True)
     supervisor = models.ForeignKey(CustomUser, related_name='supervised_objects', on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True, blank=True)
