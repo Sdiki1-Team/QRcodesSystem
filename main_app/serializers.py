@@ -165,7 +165,7 @@ class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
     object = ObjectSerializer(many=False, required=False)
     class Meta:
         model = Work
-        fields = ['id', 'object', 'name',  'description', 'worker_comment', 'start_time', 'end_time', 'review', 'images']
+        fields = ['id', 'object', 'name',  'description', 'worker_comment', 'user', 'start_time', 'end_time', 'review', 'images']
 
 
 class WorkFreeSerializer(serializers.ModelSerializer):
