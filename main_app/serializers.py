@@ -1,4 +1,5 @@
 
+from email.policy import default
 from urllib import request
 from pkg_resources import require
 from rest_framework import serializers
@@ -158,14 +159,21 @@ class WorkImageListSerializer2(serializers.ModelSerializer):
             representation['image'] = None 
         return representation
 
+class UserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'fullname', 'username']
 
 class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
     review = ReviewSerializer2(read_only=True, required=False)
     images = WorkImageListSerializer2(many=True, read_only=True, required=False, default=[])
     object = ObjectSerializer(many=False, required=False)
+    user_info = UserSerializer(many=False, default={})
+
     class Meta:
         model = Work
-        fields = ['id', 'object', 'name',  'description', 'worker_comment', 'user', 'start_time', 'end_time', 'review', 'images']
+        fields = ['id', 'object', 'name',  'description', 'worker_comment', 'user', 'user_info', 'start_time', 'end_time', 'review', 'images']
 
 
 class WorkFreeSerializer(serializers.ModelSerializer):
