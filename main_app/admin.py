@@ -3,11 +3,14 @@ from django.utils.html import format_html
 from .models import Object, Work, Review, WorkImage
 from auth_app.models import CustomUser
 
+from django.contrib.auth.models import User, Group
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
 class WorkInline(admin.TabularInline):
     model = Work
     extra = 0
     fields = ('name', 'description', 'start_time', 'end_time', 'work_status')
-    readonly_fields = ('work_status',)
+    readonly_fields = ('work_status', 'start_time', 'end_time')
 
     def work_status(self, obj):
         return "Не начата" if obj.start_time is None else "В процессе" if obj.end_time is None else "Завершено"
@@ -37,7 +40,7 @@ class ObjectAdmin(admin.ModelAdmin):
         return "-"
     qr_code_link.short_description = 'QR Code Link'
 
-    readonly_fields = ('qr_code',)  # QR-код будет только для просмотра, без возможности редактирования
+    readonly_fields = ('qr_code',)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "worker":
@@ -107,3 +110,8 @@ class WorkImageAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Запрет добавления изображений через админку
         return False
+    
+
+admin.site.unregister(Group)
+admin.site.unregister(BlacklistedToken)
+admin.site.unregister(OutstandingToken)
