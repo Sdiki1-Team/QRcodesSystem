@@ -231,7 +231,7 @@ class ObjectStatusView(APIView):
                     {
                         "status": "busy",
                         "active_work": WorkSerializer(active_work).data,
-                        "current_object": ObjectSerializer(active_work.object).data,
+                        "object": ObjectSerializer(active_work.object).data,
                     }
                 )
             else:
