@@ -163,11 +163,6 @@ class EndWorkView(APIView):
 
         work_id = serializer.validated_data["work_id"]
         work = Work.objects.get(id=work_id)
-        try:
-            if work.worker_comment != None:
-                work.worker_comment = serializer.validated_data["comment"]
-        except:
-            pass
         work.end_work()
         return Response(
             {
