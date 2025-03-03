@@ -32,11 +32,16 @@ class WorkImageInline(admin.TabularInline):
 
 @admin.register(Object)
 class ObjectAdmin(admin.ModelAdmin):
+    class Media:
+        js = ('admin.js', )
     list_display = ('name', 'address', 'deadline', 'my_status', 'supervisor', 'start_time', 'end_time', 'qr_code_link')
     search_fields = ('name', 'address')
     filter_horizontal = ('worker',)
     inlines = [WorkInline]
-
+    
+    class Media:
+        js = ('admin.js', )
+    
     def qr_code_link(self, obj):
         if obj.qr_code:
             qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
