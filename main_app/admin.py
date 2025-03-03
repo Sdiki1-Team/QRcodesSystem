@@ -135,7 +135,7 @@ class ObjectAdmin(admin.ModelAdmin):
 
 @admin.register(Work)
 class WorkAdmin(admin.ModelAdmin):
-    list_display = ('id', 'object', 'user', 'start_time', 'end_time', 'duration')
+    list_display = ('name', 'object', 'user', 'start_time', 'end_time', 'duration')
     list_filter = ('user', 'object')
     search_fields = ('id', 'object__name')
     inlines = [WorkImageInline]
@@ -154,13 +154,13 @@ class WorkAdmin(admin.ModelAdmin):
     end_work.short_description = "Завершить выбранные работы"
 
 
-
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ('work_name', 'supervisor', 'rating', 'review_date')
     list_filter = ('rating', 'supervisor')
     raw_id_fields = ('work', 'supervisor')
-    readonly_fields = ('work_name', 'work_description', 'work_start_time', 'work_end_time', 'work_worker_comment', 'worker_name', 'worker_username')
+    readonly_fields = ('work_name', 'work_description', 'work_images', 'work_start_time', 'work_end_time', 'work_worker_comment', 'worker_name', 'worker_username')
+    
 
     def work_name(self, obj):
         return obj.work.name if obj.work else "Не указано"
@@ -190,15 +190,25 @@ class ReviewAdmin(admin.ModelAdmin):
         return obj.work.user.username if obj.work and obj.work.user else "Не указано"
     worker_username.short_description = "Ник работника"
 
+    def work_images(self, obj):
+
+        if obj.work and obj.work.workimage_set.exists():
+            images = obj.work.workimage_set.all() 
+            return format_html(
+                '<br>'.join([format_html('<img src="{}" style="max-height: 100px; margin-right: 5px;"/>', image.image.url) for image in images])
+            )
+        return 'Не указано'
+    work_images.short_description = "Изображения работы"
+
     fieldsets = (
-        ('Информация о работе', {
-            'fields': ('work_name', 'work_description', 'work_start_time', 'work_end_time', 'work_worker_comment'),
-        }),
         ('Информация о работнике', {
             'fields': ('worker_name', 'worker_username')
         }),
         ('Оценка', {
             'fields': ('rating', 'comment')
+        }),
+        ('Информация о работе', {
+            'fields': ('work_name', 'work_description', 'work_start_time', 'work_end_time', 'work_worker_comment', 'work_images'),
         }),
     )
 
