@@ -44,9 +44,10 @@ class ObjectAdmin(admin.ModelAdmin):
         js = ('admin.js', )
     
     def qr_code_link(self, obj):
+        print(obj.qr_code)
         if obj.qr_code:
             qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
-            qr.add_data(obj.qr_code)  #
+            qr.add_data('https://'+obj.qr_code) 
             qr.make(fit=True)
             img = qr.make_image(fill='black', back_color='white')
 
@@ -54,7 +55,7 @@ class ObjectAdmin(admin.ModelAdmin):
             img.save(buffered, format="PNG")
             qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-            # Вставляем base64-код в тег <img> для отображения
+
             return format_html('<img src="data:image/png;base64,{}" style="max-height: 100px;" />', qr_code_base64)
 
     qr_code_link.short_description = 'QR Code'

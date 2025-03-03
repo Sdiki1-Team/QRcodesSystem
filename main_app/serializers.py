@@ -14,12 +14,12 @@ from .models import Object, Work, Review, WorkImage
 class ObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Object
-        fields = ['id', 'name', 'address', 'task_description', 'deadline', 'status', 'worker', 'supervisor']
+        fields = ['id', 'name', 'address', 'task_description', 'deadline', 'worker', 'supervisor']
 
 class ObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Object
-        fields = ['id', 'name', 'address', 'task_description', 'deadline', 'status', 'start_time', 'end_time']
+        fields = ['id', 'name', 'address', 'task_description', 'deadline', 'start_time', 'end_time']
 
 class WorkSerializer(serializers.ModelSerializer):
     class Meta:
