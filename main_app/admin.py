@@ -6,6 +6,7 @@ import qrcode
 import base64
 from django.urls import path
 from io import BytesIO
+from django import forms
 from django.http import HttpResponse
 from django.contrib.auth.models import User, Group
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
@@ -143,7 +144,6 @@ class WorkAdmin(admin.ModelAdmin):
     list_display = ('name', 'object', 'user', 'start_time', 'end_time', 'duration')
     list_filter = ('user', 'object')
     search_fields = ('id', 'object__name')
-    inlines = [WorkImageInline]
     actions = ['end_work']
 
     def duration(self, obj):
@@ -157,6 +157,27 @@ class WorkAdmin(admin.ModelAdmin):
             if work.end_time is None:
                 work.end_work()
     end_work.short_description = "Завершить выбранные работы"
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        
+        if not obj:
+            return [
+                (None, {
+                    'fields': ('name', 'object', 'description')
+                }),
+
+            ]
+        return fieldsets
+        
+    def get_inlines(self, request, obj=None):
+        inlines = []
+        if obj:
+            inlines.append(WorkImageInline)  
+        return inlines
+        
+
+
 
 
 @admin.register(Review)
