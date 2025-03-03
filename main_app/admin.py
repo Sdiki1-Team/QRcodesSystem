@@ -183,7 +183,7 @@ class WorkAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('work_name', 'supervisor', 'rating', 'review_date')
+    list_display = ('work_name', 'worker_name', 'supervisor', 'rating', 'review_date')
     list_filter = ('rating', 'supervisor')
     raw_id_fields = ('work', 'supervisor')
     readonly_fields = ('work_name', 'work_description', 'work_images', 'work_start_time', 'work_end_time', 'work_worker_comment', 'worker_name', 'worker_username')
