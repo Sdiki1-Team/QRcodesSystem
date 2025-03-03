@@ -89,6 +89,7 @@ class EndWorkSerializer(serializers.Serializer):
     )
     comment = serializers.CharField(
         required=False,
+        null=True,
         help_text="Комментарий от работника"
     )
     def validate_work_id(self, value):
