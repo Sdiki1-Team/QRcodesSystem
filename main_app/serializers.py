@@ -44,7 +44,20 @@ class WorkHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Work
         fields = ['id', 'name', 'description', 'start_time', 'end_time', 'user']
-    
+
+class ObjectToDoSerializer(serializers.ModelSerializer):
+    class Meta: 
+        model = Object
+        fields = ['id', 'name']
+
+class WorkToDoSerializer(serializers.ModelSerializer):
+    object = ObjectToDoSerializer(many=False, required=False)
+
+    class Meta:
+        model = Work
+        fields = ['id', 'name', 'description', 'object']
+
+
 class StartWorkSerializer(serializers.Serializer):
     object = serializers.IntegerField(
         required=True,
@@ -184,11 +197,6 @@ class WorkFreeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description']
 
 
-class UserSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = CustomUser
-        fields = ['id', 'fullname', 'username']
 
 
 

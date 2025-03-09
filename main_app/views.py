@@ -1,5 +1,6 @@
 import datetime
 from email.policy import HTTP
+from modulefinder import ReplacePackage
 import re
 import stat
 from urllib import request, response
@@ -28,7 +29,8 @@ from .serializers import (
     WorkHistorySerializer,
     WorkWithReviewAndImagesSerializer,
     WorkFreeSerializer,
-    UserSerializer
+    UserSerializer,
+    WorkToDoSerializer
 )
 from .models import Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
@@ -653,7 +655,7 @@ class UserInfoView(APIView):
         security=[{"Bearer": []}],
         tags=["User"],
         operation_description="Получение информации о пользователе по его айди",
-        responses={200: UserSerializer(many=False), 404: "User not found"},
+        responses={200: UserSerializer, 404: "User not found"},
     )
     def get(self, request, user_id):
         user = CustomUser.objects.get(id=user_id)
@@ -661,4 +663,21 @@ class UserInfoView(APIView):
             serializer = UserSerializer(user, many=False)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class WorkToDoView(APIView):
+    parser_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["User"],
+        operation_description="Получение работ, которые нужно сделать по всем объектам пользователя",
+        responses={200: WorkToDoSerializer, 404: "Работы не найдены"},
+    )
+    def get(self, request):
+        user = request.user
+        objects = Object.objects.filter(worker=user).all()
+        works = []
+        for i in objects:
+            works += Work.objects.filter(object=i).filter(start_time__isnull=True).filter(end_time__isnull=True).all()
+        
+        return Response(WorkToDoSerializer(works, many=True).data, status=status.HTTP_200_OK)
     
