@@ -1,10 +1,12 @@
 import datetime
 from email.policy import HTTP
 from modulefinder import ReplacePackage
+from multiprocessing import context
 import re
 import stat
 from urllib import request, response
 from xml.dom import NotFoundErr
+from django.test import tag
 from rest_framework import status, generics, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -24,6 +26,7 @@ from .serializers import (
     StartWorkSerializer,
     StartFreeWorkSerializer,
     EndWorkSerializer,
+    UserSerializerWithRating,
     ObjectSerializer,
     StatusResponseSerializer,
     WorkHistorySerializer,
@@ -32,7 +35,7 @@ from .serializers import (
     UserSerializer,
     WorkToDoSerializer
 )
-from .models import Work, WorkImage, Object
+from .models import Review, Work, WorkImage, Object
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -448,7 +451,7 @@ class WorkImageDeleteView(generics.DestroyAPIView):
         tags=["Work Images"],
         operation_description="Удаление изображения по его айди",
         operation_summary="Удаление изображения",
-        manual_parameters=[
+        manual_parametersgit=[
             openapi.Parameter(
                 "work_id",
                 openapi.IN_PATH,
@@ -680,4 +683,25 @@ class WorkToDoView(APIView):
             works += Work.objects.filter(object=i).filter(start_time__isnull=True).filter(end_time__isnull=True).all()
         
         return Response(WorkToDoSerializer(works, many=True).data, status=status.HTTP_200_OK)
-    
+
+class GetMyInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        security=[{"Bearer": []}],
+        tags=["User"],
+        operation_description="Получение информации о пользователе",
+        responses={200: UserSerializerWithRating, 404: "User not found"},
+    )
+
+    def get(self, request):
+        rating = 0
+        rating_all = 0
+        rating_counter = 0
+        for i in Review.objects.filter(work__user=request.user):
+            rating_all += i.rating
+            rating_counter += 1
+        if rating_counter != 0:
+            rating = rating_all/rating_counter
+        
+        serializer = UserSerializerWithRating(request.user,  context={'rating': rating}, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -174,10 +174,18 @@ class WorkImageListSerializer2(serializers.ModelSerializer):
         return representation
 
 class UserSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = CustomUser
         fields = ['id', 'fullname', 'username']
+
+class UserSerializerWithRating(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField()
+    def get_rating(self, obj):
+        return self.context.get('rating')
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'fullname', 'username', 'rating']
 
 class WorkWithReviewAndImagesSerializer(serializers.ModelSerializer):
     review = ReviewSerializer2(read_only=True, required=False)

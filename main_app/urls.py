@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GetFreeWorksView,StartFreeWorkView, StartWorkView, WorkToDoView, UserInfoView, WorksWithoutReviewsObjectView, WorksWithReviewsObjectView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
+from .views import GetFreeWorksView,StartFreeWorkView, StartWorkView, WorkToDoView,GetMyInfoView, UserInfoView, WorksWithoutReviewsObjectView, WorksWithReviewsObjectView, EndWorkView, ReviewCreateView, WorksWithoutReviewsView, ObjectStatusView, WorkDetailView, WorkImageDeleteView,UserWorksWithReviewsAndImagesView, WorkImageDetailView, WorkImageListView, WorkImageUploadView, WorkHistoryView
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -22,6 +22,7 @@ urlpatterns = [
     path('user/works/', UserWorksWithReviewsAndImagesView.as_view(), name='user-works-with-reviews-and-images'),
     path("user/info/<int:user_id>/", UserInfoView.as_view(), name="user-info"),
     path("user/todo/", WorkToDoView.as_view(), name='work-to-do'),
+    path("user/myinfo/", GetMyInfoView.as_view(), name='get-my-user-info'),
 
     path('review/<int:work_id>/', ReviewCreateView.as_view(), name='create-review'),
     path('works_without_reviews/', WorksWithoutReviewsView.as_view(), name='works-without-reviews'),
