@@ -665,7 +665,7 @@ class UserInfoView(APIView):
         return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
     
 class WorkToDoView(APIView):
-    parser_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         security=[{"Bearer": []}],
         tags=["User"],
