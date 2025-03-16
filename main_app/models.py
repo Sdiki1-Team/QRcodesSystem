@@ -34,6 +34,48 @@ def generate_qr_code(sender, instance, created, **kwargs):
         instance.qr_code = f"nikitacmo949.ru/get_by_qr/{instance.id}/"
         instance.save()
 
+class WorkStatic(models.Model):
+    REPEAT_EVERY_CHOICES = [
+        ('15m', 'Каждые 15 минут'),
+        ('20m', 'Каждые 20 минут'),
+        ('30m', 'Каждые 30 минут'),
+        ('1h', 'Каждый час'),
+        ('2h', 'Каждые два часа'),
+        ('3h', 'Каждые три часа'),
+        ('5h', 'Каждые 5 часов'),
+        ('daily', 'Каждый день'),
+        ('workday', 'Каждый рабочий день'),
+        ('weekend', 'Каждые выходные'),
+        ('weekly', 'Раз в неделю'),
+        ('monthly', 'Раз в месяц'),
+    ]
+
+
+    name = models.CharField(max_length=255, null=True, blank=True, verbose_name='Имя')
+    description = models.TextField(null=True, blank=True, verbose_name='Описание')
+    worker_comment = models.TextField(null=True, blank=True, verbose_name='Комментарий работника')
+    object = models.ForeignKey(Object, on_delete=models.CASCADE, verbose_name='Объект')
+    user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.CASCADE, verbose_name='Работник')
+
+
+    repeat_every = models.CharField(
+        max_length=10, 
+        choices=REPEAT_EVERY_CHOICES, 
+        verbose_name='Повторять каждые'
+    )
+    daily_start_time = models.TimeField(verbose_name='Время начала выполнения')
+    daily_end_time = models.TimeField(verbose_name='Время окончания выполнения')
+    start_date = models.DateTimeField(verbose_name='Дата начала выполнения')
+    end_date = models.DateTimeField(verbose_name='Дата окончания выполнения')
+
+    class Meta:
+        verbose_name = "Шаблон задачи"
+        verbose_name_plural = "Шаблоны задач"
+
+    def __str__(self):
+        return self.name or f"Шаблон задачи #{self.id}"
+
+
 
 class Work(models.Model):
     id = models.BigAutoField(primary_key=True, verbose_name='Id')
@@ -44,7 +86,13 @@ class Work(models.Model):
     user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.CASCADE, verbose_name='Работник')
     start_time = models.DateTimeField(null=True, blank=True, verbose_name='Время начала')
     end_time = models.DateTimeField(null=True, blank=True, verbose_name='Время окончания')
-
+    work_static = models.ForeignKey(
+        WorkStatic, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name='Шаблон задачи'
+    )
     def start_work(self, name: str, description: str = None):
         self.start_time = datetime.datetime.now()
         self.name = name
@@ -58,6 +106,7 @@ class Work(models.Model):
     class Meta:
         verbose_name = "Задача"
         verbose_name_plural = "Задачи"
+
 
 class Review(models.Model):
     work = models.OneToOneField(Work, on_delete=models.CASCADE, verbose_name='Работа')

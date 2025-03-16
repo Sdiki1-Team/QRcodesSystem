@@ -17,6 +17,8 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
     command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
+    networks:
+      - app-network
     depends_on:
       - db
 
@@ -31,6 +33,8 @@ services:
     depends_on:
       - backend
       - frontend
+    networks:
+      - app-network
 
   frontend:
     build:
@@ -42,9 +46,10 @@ services:
       - ../frontend:/app
     depends_on:
       - backend
+    networks:
+      - app-network
     environment:
       - REACT_APP_HOST=${HOST}
-
 
   db:
     image: postgres:13
@@ -55,10 +60,76 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  celery-worker:
+    build:
+      context: ..
+    command: celery -A backend worker -l info
+    volumes:
+      - ..:/app
+    environment:  
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db  
+      - DB_PORT=${DB_PORT}
+    networks:
+      - app-network
+    depends_on:
+      - db 
+      - redis
+
+  celery-beat:
+    build:
+      context: ..
+    command: celery -A backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ..:/app
+    environment: 
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db  
+      - DB_PORT=${DB_PORT}
+    networks:
+      - app-network
+    depends_on:
+      - db  
+      - redis
 
 
+  flower:
+    build:
+      context: ..
+    command: celery -A backend flower --port=5555
+    ports:
+      - "5555:5555"
+    networks:
+      - app-network
+    depends_on:
+      - celery-worker
 
 volumes:
+  redis_data:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

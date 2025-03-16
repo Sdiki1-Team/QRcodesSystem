@@ -28,4 +28,6 @@ urlpatterns = [
     path('works_without_reviews/', WorksWithoutReviewsView.as_view(), name='works-without-reviews'),
     path('object/works_without_reviews/<int:object_id>/', WorksWithoutReviewsObjectView.as_view(), name='works-without-reviews'),
     path('object/works_with_reviews/<int:object_id>/', WorksWithReviewsObjectView.as_view(), name='works-without-reviews'),
+
+
 ]

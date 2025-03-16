@@ -5,3 +5,8 @@ drf-yasg
 django-cors-headers
 Pillow
 psycopg2-binary
+qrcode
+celery==5.3.6
+redis==4.6.0
+django-celery-beat==2.5.0
+flower==2.0.1

@@ -1,0 +1,89 @@
+{% extends "admin/edit_inline/tabular.html" %}
+
+{% block after_inline %}
+<div class="copy-works-container" style="margin: 15px 0; padding: 10px; background: #f5f5f5;">
+    <button 
+        type="button" 
+        class="button234" 
+        id="copyWorksButton234"
+        style=" background: #f5f5f5;"
+    >
+        🚀 Копировать выбранные задачи
+    </button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы управления
+    const checkboxes = document.querySelectorAll('input.work-checkbox');
+    const copyButton = document.getElementById('copyWorksButton');
+    console.log('Checkboxes found:', checkboxes.length);
+    console.log('Copy button exists:', !!copyButton);
+    // Показываем кнопку при выборе чекбоксов
+    function toggleButton() {
+        const checked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+        copyButton.style.display = checked ? 'inline-block' : 'none';
+    }
+    
+    // Назначаем обработчики
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', toggleButton);
+    });
+    
+    // Обработчик для кнопки
+    copyButton.addEventListener('click', function() {
+        const selected = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+        
+        if (selected.length === 0) {
+            alert('Выберите хотя бы одну задачу!');
+            return;
+        }
+        
+        const targetId = prompt('Введите ID целевого объекта:');
+        if (!targetId) return;
+
+        fetch(`/admin/main_app/object/${targetId}/copy-works/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ works: selected })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Ошибка сети');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Неизвестная ошибка');
+            }
+        })
+        .catch(error => {
+            alert('Ошибка: ' + error.message);
+        });
+    });
+    
+    // Инициализация
+    toggleButton();
+});
+
+</script>
+
+<style>
+.copy-works-container {
+    border-top: 2px solid #ddd;
+    margin-top: 20px !important;
+}
+
+.work-checkbox {
+    margin: 0 5px 0 0 !important;
+    vertical-align: middle;
+}
+
+</style>
+{% endblock %}
