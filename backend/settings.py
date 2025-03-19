@@ -26,9 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-%kb9+_g=hy9pz19mu!qa5cd$*hg)0#s(7msc_58rb+z!gx^eqg"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+DEBUG = False
 
 
 # Application definition
@@ -53,12 +51,32 @@ INSTALLED_APPS = [
 
 ]
 
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://backend:8000", "http://127.0.0.1:3000", "http://127.0.0.1:8080"]
+CSRF_TRUSTED_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000', 
+  'http://127.0.0.1:8080',
+  'http://nikitacmo949.ru',
+  'http://my-yasmin.ru',
+  'https://my-yasmin.ru',
+  'https://wizzard-digital.my-yasmin.ru',
+  'https://pechka.my-yasmin.ru',
+  'https://nikostroy.my-yasmin.ru'
+
+  'http://127.0.0.1:8051',
+  'http://127.0.0.1:8052',
+  'http://127.0.0.1:8053',
+]
 
 CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://127.0.0.1:3000', 
   'http://127.0.0.1:8080',
+  'http://nikitacmo949.ru',
+  'http://my-yasmin.ru',
+  'https://my-yasmin.ru',
+  'https://wizzard-digital.my-yasmin.ru',
+  'https://pechka.my-yasmin.ru',
+  'https://nikostroy.my-yasmin.ru'
 ]
 
 REST_FRAMEWORK = {
@@ -66,6 +84,10 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
 }
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale')
+]
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
