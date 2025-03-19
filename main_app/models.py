@@ -5,6 +5,7 @@ from auth_app.models import CustomUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import os
+from django.conf import settings
 
 class Object(models.Model):
     
@@ -31,7 +32,7 @@ class Object(models.Model):
 @receiver(post_save, sender=Object)
 def generate_qr_code(sender, instance, created, **kwargs):
     if created:
-        instance.qr_code = f"nikitacmo949.ru/get_by_qr/{instance.id}/"
+        instance.qr_code = f"{getattr(settings, 'CURRENT_DOMAIN')}/get_by_qr/{instance.id}/"
         instance.save()
 
 class WorkStatic(models.Model):

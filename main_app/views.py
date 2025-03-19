@@ -88,8 +88,7 @@ class StartWorkView(APIView):
                 {"error": "Объект не найден"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        work = Work.objects.create(object=obj, user=user)
-        work.start_work(name, description)
+        work = Work.objects.create(object=obj)
 
         return Response(
             {"detail": "Работа успешно начата", "work_id": work.id},

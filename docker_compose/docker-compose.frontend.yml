@@ -1,134 +1,179 @@
 version: '3.8'
 
+x-base-backend: &base-backend
+  build:
+    context: ..
+  environment:
+    - DEBUG=0
+    - DB_HOST=${DB_HOST}
+    - DB_PORT=${DB_PORT}
+  volumes:
+    - ..:/app
+  networks:
+    - app-network
+
+x-base-db: &base-db
+  image: postgres:13
+  environment:
+    POSTGRES_DB: ${DB_NAME}
+    POSTGRES_USER: ${DB_USER}
+    POSTGRES_PASSWORD: ${DB_PASSWORD}
+  volumes:
+    - ${DB_VOLUME}:/var/lib/postgresql/data
+  networks:
+    - app-network
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
 services:
-  backend:
-    build:
-      context: ..
-    container_name: backend
-    volumes:
-      - ..:/app  
-    ports:
-      - "${DJANGO_PORT}:${DJANGO_PORT}"
+  # Kowork Environment
+  kowork-db:
+    <<: *base-db
     environment:
-      - DEBUG=${DEBUG}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-    command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
-    networks:
-      - app-network
-    depends_on:
-      - db
-
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "8080:8080"
+      POSTGRES_DB: kowork_db
+      POSTGRES_USER: kowork_user
+      POSTGRES_PASSWORD: kowork_pass
     volumes:
-      - ../docker_compose/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - backend
-      - frontend
+      - kowork_postgres_data:/var/lib/postgresql/data
+
+  kowork-redis:
+    image: redis:alpine
+    volumes:
+      - kowork_redis_data:/data
     networks:
       - app-network
 
-  frontend:
+  kowork-backend:
+    <<: *base-backend
+    environment:
+      - DB_NAME=kowork_db
+      - DB_USER=kowork_user
+      - DB_PASSWORD=kowork_pass
+      - DB_HOST=kowork-db
+      - CELERY_BROKER_URL=redis://kowork-redis:6379/0
+      - DOMAIN=KOWORK_DOMAIN
+    ports:
+      - "8001:8000"
+    depends_on:
+      kowork-db:
+        condition: service_healthy
+      kowork-redis:
+        condition: service_started
+
+  kowork-frontend:
     build:
       context: ../frontend
-    container_name: frontend
+    environment:
+      - REACT_APP_API_HOST=kowork.my-yasmin.ru
     ports:
-      - "3000:3000"
-    volumes:
-      - ../frontend:/app
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    environment:
-      - REACT_APP_HOST=${HOST}
-
-  db:
-    image: postgres:13
-    container_name: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - "3001:3000"
     networks:
       - app-network
 
-  redis:
+  # Coffee Environment
+  coffee-db:
+    <<: *base-db
+    environment:
+      POSTGRES_DB: coffee_db
+      POSTGRES_USER: coffee_user
+      POSTGRES_PASSWORD: coffee_pass
+    volumes:
+      - coffee_postgres_data:/var/lib/postgresql/data
+
+  coffee-redis:
     image: redis:alpine
-    container_name: redis
+    volumes:
+      - coffee_redis_data:/data
+    networks:
+      - app-network
+
+  coffee-backend:
+    <<: *base-backend
+    environment:
+      - DB_NAME=coffee_db
+      - DB_USER=coffee_user
+      - DB_PASSWORD=coffee_pass
+      - DB_HOST=coffee-db
+      - CELERY_BROKER_URL=redis://coffee-redis:6379/0
+      - DOMAIN=coffee.my-yasmin.ru
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
-
-  celery-worker:
-    build:
-      context: ..
-    command: celery -A backend worker -l info
-    volumes:
-      - ..:/app
-    environment:  
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db  
-      - DB_PORT=${DB_PORT}
-    networks:
-      - app-network
+      - "8002:8000"
     depends_on:
-      - db 
-      - redis
+      coffee-db:
+        condition: service_healthy
+      coffee-redis:
+        condition: service_started
 
-  celery-beat:
-    build:
-      context: ..
-    command: celery -A backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+  # Clean Environment
+  clean-db:
+    <<: *base-db
+    environment:
+      POSTGRES_DB: clean_db
+      POSTGRES_USER: clean_user
+      POSTGRES_PASSWORD: clean_pass
     volumes:
-      - ..:/app
-    environment: 
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db  
-      - DB_PORT=${DB_PORT}
+      - clean_postgres_data:/var/lib/postgresql/data
+
+  clean-redis:
+    image: redis:alpine
+    volumes:
+      - clean_redis_data:/data
     networks:
       - app-network
-    depends_on:
-      - db  
-      - redis
 
-
-  flower:
-    build:
-      context: ..
-    command: celery -A backend flower --port=5555
+  clean-backend:
+    <<: *base-backend
+    environment:
+      - DB_NAME=clean_db
+      - DB_USER=clean_user
+      - DB_PASSWORD=clean_pass
+      - DB_HOST=clean-db
+      - CELERY_BROKER_URL=redis://clean-redis:6379/0
+      - DOMAIN=clean.my-yasmin.ru
     ports:
-      - "5555:5555"
+      - "8003:8000"
+    depends_on:
+      clean-db:
+        condition: service_healthy
+      clean-redis:
+        condition: service_started
+
+  clean-frontend:
+    build:
+      context: ../frontend
+    environment:
+      - REACT_APP_API_HOST=clean.my-yasmin.ru
+    ports:
+      - "3003:3000"
     networks:
       - app-network
+
+  # Reverse Proxy
+  reverse-proxy:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-prod.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
     depends_on:
-      - celery-worker
+      - kowork-backend
+      - coffee-backend
+      - clean-backend
+    networks:
+      - app-network
 
 volumes:
-  redis_data:
-  postgres_data:
+  kowork_postgres_data:
+  kowork_redis_data:
+  coffee_postgres_data:
+  coffee_redis_data:
+  clean_postgres_data:
+  clean_redis_data:
 
 networks:
   app-network:

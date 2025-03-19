@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
-  backend:
+  backend-kowork:
     build:
       context: ..
-    container_name: backend
+    container_name: backend-kowork
     volumes:
       - ..:/app  
     ports:
@@ -16,44 +14,46 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
+      - DOMAIN=${DOMAIN}
+      - CELERY_BROKER_URL=redis://redis-kowork:6379/0
     command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${DJANGO_PORT}"]
     networks:
-      - app-network
+      - app-network-kowork
     depends_on:
-      - db
+      - db-kowork
 
 
-  nginx:
+  nginx-kowork:
     image: nginx:latest
-    container_name: nginx
+    container_name: nginx-kowork
     ports:
-      - "8080:8080"
+      - "8051:8051"
     volumes:
-      - ../docker_compose/nginx.conf:/etc/nginx/nginx.conf
+      - ../docker_compose/nginx.kowork.conf:/etc/nginx/nginx.conf
     depends_on:
-      - backend
-      - frontend
+      - backend-kowork
+      - frontend-kowork
     networks:
-      - app-network
+      - app-network-kowork
 
-  frontend:
+  frontend-kowork:
     build:
       context: ../frontend
-    container_name: frontend
+    container_name: frontend-kowork
     ports:
       - "3000:3000"
     volumes:
       - ../frontend:/app
     depends_on:
-      - backend
+      - backend-kowork
     networks:
-      - app-network
+      - app-network-kowork
     environment:
       - REACT_APP_HOST=${HOST}
 
-  db:
+  db-kowork:
     image: postgres:13
-    container_name: postgres
+    container_name: postgres-kowork
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -66,19 +66,19 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - app-network
+      - app-network-kowork
 
-  redis:
+  redis-kowork:
     image: redis:alpine
-    container_name: redis
+    container_name: redis-kowork
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - app-network
+      - app-network-kowork
 
-  celery-worker:
+  celery-worker-kowork:
     build:
       context: ..
     command: celery -A backend worker -l info
@@ -88,15 +88,16 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db  
+      - DB_HOST=db-kowork
       - DB_PORT=${DB_PORT}
+      - CELERY_BROKER_URL=redis://redis-kowork:6379/0
     networks:
-      - app-network
+      - app-network-kowork
     depends_on:
-      - db 
-      - redis
+      - db-kowork
+      - redis-kowork
 
-  celery-beat:
+  celery-beat-kowork:
     build:
       context: ..
     command: celery -A backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
@@ -106,30 +107,33 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db  
+      - DB_HOST=db-kowork
       - DB_PORT=${DB_PORT}
+      - CELERY_BROKER_URL=redis://redis-kowork:6379/0
     networks:
-      - app-network
+      - app-network-kowork
     depends_on:
-      - db  
-      - redis
+      - db-kowork
+      - redis-kowork
 
 
-  flower:
+  flower-kowork:
     build:
       context: ..
     command: celery -A backend flower --port=5555
+    environment:
+    - CELERY_BROKER_URL=redis://redis-kowork:6379/0
     ports:
       - "5555:5555"
     networks:
-      - app-network
+      - app-network-kowork
     depends_on:
-      - celery-worker
+      - celery-worker-kowork
 
 volumes:
   redis_data:
   postgres_data:
 
 networks:
-  app-network:
+  app-network-kowork:
     driver: bridge
