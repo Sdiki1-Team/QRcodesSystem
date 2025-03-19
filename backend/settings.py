@@ -66,6 +66,21 @@ CSRF_TRUSTED_ORIGINS = [
   'http://127.0.0.1:8052',
   'http://127.0.0.1:8053',
 ]
+ALLOWED_HOSTS = [
+  'localhost',
+  '127.0.0.1:3000', 
+  'http://127.0.0.1:8080',
+  'nikitacmo949.ru',
+  'my-yasmin.ru',
+  'my-yasmin.ru',
+  'wizzard-digital.my-yasmin.ru',
+  'pechka.my-yasmin.ru',
+  'nikostroy.my-yasmin.ru'
+
+  '127.0.0.1:8051',
+  '127.0.0.1:8052',
+  '127.0.0.1:8053',
+]
 
 CORS_ALLOWED_ORIGINS = [
   'http://localhost:3000',
