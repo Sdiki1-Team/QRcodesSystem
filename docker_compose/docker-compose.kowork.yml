@@ -55,7 +55,7 @@ services:
     image: postgres:13
     container_name: postgres-kowork
     volumes:
-      - postgres_data:/var/lib/postgresql/data/kowork/
+      - postgres_data:/postgresql/data/kowork/
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
