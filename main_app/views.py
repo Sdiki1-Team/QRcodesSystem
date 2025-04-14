@@ -550,7 +550,7 @@ class WorksWithoutReviewsObjectView(APIView):
         if request.user.is_staff or request.user.is_superuser:
             works_without_reviews = Work.objects.filter(review__isnull=True, object=object_id)
             if not works_without_reviews:
-                return Response({"error": "Работы без отзывов не найдены."}, status=404)
+                return Response([], status=status.HTTP_200_OK)
             for work in works_without_reviews:
                 work.images = list(WorkImage.objects.filter(work_id=work.id).all())
             serializer = WorkSerializer2(works_without_reviews, many=True)
