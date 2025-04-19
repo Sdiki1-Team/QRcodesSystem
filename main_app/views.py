@@ -530,7 +530,7 @@ class WorksWithoutReviewsView(APIView):
         if request.user.is_staff:
             works_without_reviews = Work.objects.filter(review__isnull=True)
             if not works_without_reviews:
-                return Response({"error": "Работы без отзывов не найдены."}, status=404)
+                return Response([], status=status.HTTP_200_OK)
             
             serializer = WorkSerializer2(works_without_reviews, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
