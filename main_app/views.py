@@ -601,16 +601,22 @@ class UserWorksWithReviewsAndImagesView(APIView):
     )
     def get(self, request):
         user = request.user
-        works = Work.objects.filter(user=user)
-        if not works:
-            return Response([], status=status.HTTP_200_OK)
+        if not user.is_staff or not user.is_superuser:
+            works = Work.objects.filter(user=user)
+            if not works:
+                return Response([], status=status.HTTP_200_OK)
+            
+            for work in works:
+                work.images = list(WorkImage.objects.filter(work_id=work.id).all())
+
+            serializer = WorkWithReviewAndImagesSerializer(works, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            objects = Object.objects.filter(supervisor=user).all()
+            works = Work.objects.filter(object__in=objects).all()
+            serializer = WorkWithReviewAndImagesSerializer(works, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
-        for work in works:
-            work.images = list(WorkImage.objects.filter(work_id=work.id).all())
-
-        serializer = WorkWithReviewAndImagesSerializer(works, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 class WorkDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -700,7 +706,7 @@ class GetMyInfoView(APIView):
             rating_all += i.rating
             rating_counter += 1
         if rating_counter != 0:
-            rating = rating_all/rating_counter
+            rating = round(rating_all/rating_counter, 1)
         
         serializer = UserSerializerWithRating(request.user,  context={'rating': rating}, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
